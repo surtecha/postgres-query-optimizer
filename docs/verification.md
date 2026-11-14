@@ -202,3 +202,24 @@ invalid solely because the session cannot resolve the API hostname.
 PostgreSQL execution, container builds, real browser tests, screenshots, measured
 workloads, publication and Actions remain blocked and are not claimed complete.
 `experiments/reports/continuation-verification.json` records the current results.
+
+## Supplied host execution evidence: 14 November 2026
+
+Host Terminal output confirms successful API, frontend, migration, worker and seed
+image builds. Both PostgreSQL 16 services became healthy. Migration and seed
+containers exited successfully, the API became healthy, and worker and frontend
+containers started. Frontend health was still starting in the supplied snapshot.
+
+The supplied container test output reports 12 integration tests passed in 1.56
+seconds on Linux, Python 3.12.16 and Pytest 8.4.2. The suite includes four provider
+contract cases and eight PostgreSQL cases. The PostgreSQL cases exercised real
+plans and metadata across the workload definitions, reader write rejection,
+finite equivalence and result limits, index cleanup and injection rejection,
+API persistence and idempotency, and completion of a durable worker session.
+These results overlap existing provider tests and are not added to the local
+suite count as distinct tests.
+
+This is supplied host evidence. The execution session still receives permission
+denied for the Docker socket and cannot connect to the host API or frontend.
+Real browser tests, screenshots and repeated workload evaluations remain pending.
+No measured speedup follows from these integration results.

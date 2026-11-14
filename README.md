@@ -9,8 +9,10 @@ SQL formulations and physical indexes beyond a fixed query and schema.
 formatting, strict Mypy, ESLint and strict TypeScript checks pass. The frontend
 production build uses webpack and passes with the current Node 26 runtime.
 The configured Node 22 build passed during the preceding verification. This
-session cannot access the Docker socket. PostgreSQL execution, real browser workflows, benchmarks,
-GitHub publication and CI remain unverified. No measured speedups or application
+session cannot access the Docker socket. Supplied host output confirms all five
+application image builds, successful stack startup, and 12 integration tests
+passing against PostgreSQL 16. Real browser workflows, benchmarks, GitHub
+publication and CI remain unverified. No measured speedups or application
 screenshots are claimed.
 
 ## Implemented code
