@@ -10,7 +10,20 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         selected = [r for r in rows if r["provider"] == provider]
         executed = [r for r in selected if r.get("session")]
         completed = [r for r in executed if r["session"].get("status") == "completed"]
-        reports = [r["session"].get("report") or {} for r in completed]
+        all_reports = [r["session"].get("report") or {} for r in completed]
+        # Model failures can still produce deterministic fallback improvements.
+        # Keep their billed usage, but exclude them from evidence of AI value.
+        reports = (
+            all_reports
+            if provider == "deterministic"
+            else [
+                report
+                for report in all_reports
+                if report.get("model_usage", {}).get("provider") == "openai"
+                and report["model_usage"].get("calls", 0) > 0
+                and "error" not in report["model_usage"]
+            ]
+        )
         candidates = [c for report in reports for c in report.get("candidates", [])]
         valid = [c for c in candidates if c.get("safety", {}).get("passed")]
         equivalent = [
@@ -20,7 +33,7 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ]
         accepted = [c for c in candidates if c.get("accepted")]
         speedups = [c["benchmark"]["median_speedup"] for c in accepted]
-        usage = [r.get("model_usage", {}) for r in reports]
+        usage = [r.get("model_usage", {}) for r in all_reports]
         measured = [c for c in candidates if "benchmark" in c]
 
         def rate(numerator: int, denominator: int) -> float | None:
@@ -30,12 +43,14 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "requested_workloads": len(selected),
             "executed_workloads": len(executed),
             "completed_workloads": len(completed),
+            "evaluated_workloads": len(reports),
+            "fallback_only_workloads": len(all_reports) - len(reports),
             "not_run": len(selected) - len(executed),
             "valid_candidate_rate": rate(len(valid), len(candidates)),
             "equivalence_pass_rate": rate(len(equivalent), len(valid)),
             "candidate_acceptance_rate": rate(len(accepted), len(candidates)),
             "workloads_improved_rate": rate(
-                sum(r.get("decision") == "validated_improvement" for r in reports), len(completed)
+                sum(r.get("decision") == "validated_improvement" for r in reports), len(reports)
             ),
             "accepted_workloads_regressed_rate": rate(
                 sum(
@@ -45,13 +60,15 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
                     )
                     for r in reports
                 ),
-                len(completed),
+                len(reports),
             ),
             "experimental_candidate_regression_rate": rate(
                 sum(c["benchmark"]["median_speedup"] < 1 for c in measured), len(measured)
             ),
             "median_accepted_speedup": statistics.median(speedups) if speedups else None,
-            "total_optimization_seconds": sum(r.get("duration_seconds", 0) for r in reports),
+            "model_candidates": sum(c.get("source") == "openai" for c in candidates),
+            "accepted_model_candidates": sum(c.get("source") == "openai" for c in accepted),
+            "total_optimization_seconds": sum(r.get("duration_seconds", 0) for r in all_reports),
             "model_calls": sum(u.get("calls", 0) for u in usage),
             "tokens": sum(u.get("tokens", 0) for u in usage)
             if usage and all(isinstance(u.get("tokens"), int) for u in usage)
@@ -67,6 +84,7 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 "Metrics cover completed reports only",
                 "Database time excludes setup and correctness reads",
                 "Cost per success is unavailable without verified provider pricing",
+                "Model fallback-only sessions are excluded from model-arm outcome rates",
             ],
         }
     return result
