@@ -7,9 +7,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="PGO_", env_file=".env", extra="ignore")
-    app_dsn: SecretStr = SecretStr("postgresql+psycopg://pgo_app:local_app_only@localhost:5433/pgo_app")
-    read_dsn: SecretStr = SecretStr("postgresql://pgo_reader:local_reader_only@localhost:5434/pgo_benchmark")
-    admin_dsn: SecretStr = SecretStr("postgresql://pgo_experiment:local_experiment_only@localhost:5434/pgo_benchmark")
+    app_dsn: SecretStr = SecretStr(
+        "postgresql+psycopg://pgo_app:local_app_only@localhost:5433/pgo_app"
+    )
+    read_dsn: SecretStr = SecretStr(
+        "postgresql://pgo_reader:local_reader_only@localhost:5434/pgo_benchmark"
+    )
+    admin_dsn: SecretStr = SecretStr(
+        "postgresql://pgo_experiment:local_experiment_only@localhost:5434/pgo_benchmark"
+    )
     state_dir: Path = Path("state")
     provider: Literal["deterministic", "openai"] = "deterministic"
     model: str = "gpt-4.1-mini"

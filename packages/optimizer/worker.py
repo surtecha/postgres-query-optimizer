@@ -32,8 +32,10 @@ def run() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     # Single active benchmark worker. Connection loss releases the lock.
-    with psycopg.connect(settings.app_dsn.get_secret_value().replace("postgresql+psycopg:", "postgresql:"),
-                         autocommit=True) as leader:
+    with psycopg.connect(
+        settings.app_dsn.get_secret_value().replace("postgresql+psycopg:", "postgresql:"),
+        autocommit=True,
+    ) as leader:
         if not leader.execute("SELECT pg_try_advisory_lock(718029413)").fetchone()[0]:
             raise RuntimeError("Another worker is active")
         store.recover()
@@ -45,12 +47,20 @@ def run() -> None:
                     continue
                 identifier = row["id"]
                 try:
-                    with db.experiment_lock() as admin, SqliteSaver.from_conn_string(
-                            str(settings.state_dir / "checkpoints.sqlite")) as saver:
+                    with (
+                        db.experiment_lock() as admin,
+                        SqliteSaver.from_conn_string(
+                            str(settings.state_dir / "checkpoints.sqlite")
+                        ) as saver,
+                    ):
                         graph = Workflow(db, store, settings, admin).compile(saver)
                         config = {"configurable": {"thread_id": identifier}, "recursion_limit": 32}
                         snapshot = graph.get_state(config)
-                        initial = {"session_id": identifier, "request": row["request"], "started_at": time.time()}
+                        initial = {
+                            "session_id": identifier,
+                            "request": row["request"],
+                            "started_at": time.time(),
+                        }
                         state = graph.invoke(None if snapshot.values else initial, config)
                         store.finish(identifier, "completed", state["report"])
                 except Cancelled:
@@ -58,7 +68,10 @@ def run() -> None:
                 except BudgetExceeded as exc:
                     store.finish(identifier, "budget_exceeded", {"error": str(exc)})
                 except Exception as exc:
-                    store.event(identifier, {"stage": "worker", "status": "error", "category": type(exc).__name__})
+                    store.event(
+                        identifier,
+                        {"stage": "worker", "status": "error", "category": type(exc).__name__},
+                    )
                     store.finish(identifier, "failed", {"error": type(exc).__name__})
         finally:
             db.close()

@@ -1,11 +1,12 @@
 """Bounded exact result comparison, preserving duplicate and type information."""
+
 from typing import Any
 
 from sqlglot import exp
 
-from optimizer.results import equal_rows
 from optimizer.database import Database
 from optimizer.models import Validation
+from optimizer.results import equal_rows
 from optimizer.safety import order_compatible, structure, validate
 
 
@@ -37,7 +38,11 @@ def verify(db: Database, original: str, candidate: str) -> Validation:
     a, b = structure(original), structure(candidate)
     changes = {key: [a[key], b[key]] for key in a if a[key] != b[key]}
     if not order_compatible(original, candidate):
-        return Validation(status="inconclusive", reason="Ordering or pagination contract unsupported", structural_changes=changes)
+        return Validation(
+            status="inconclusive",
+            reason="Ordering or pagination contract unsupported",
+            structural_changes=changes,
+        )
     ordered = bool(validate(original).args.get("order"))
     datasets: list[str] = []
     try:
@@ -47,10 +52,20 @@ def verify(db: Database, original: str, candidate: str) -> Validation:
                 left, lt = fetch(conn, rebind(original, schema), db)
                 right, rt = fetch(conn, rebind(candidate, schema), db)
                 if lt != rt or not equal_rows(left, right, ordered):
-                    return Validation(status="failed", reason=f"Values, types, columns or multiplicities differ on {schema}",
-                                      datasets=datasets+[schema], structural_changes=changes)
+                    return Validation(
+                        status="failed",
+                        reason=f"Values, types, columns or multiplicities differ on {schema}",
+                        datasets=datasets + [schema],
+                        structural_changes=changes,
+                    )
                 datasets.append(schema)
     except OverflowError as exc:
-        return Validation(status="inconclusive", reason=str(exc), datasets=datasets, structural_changes=changes)
-    return Validation(status="differentially_validated", reason="Exact finite snapshot comparisons passed, no formal proof",
-                      datasets=datasets, structural_changes=changes)
+        return Validation(
+            status="inconclusive", reason=str(exc), datasets=datasets, structural_changes=changes
+        )
+    return Validation(
+        status="differentially_validated",
+        reason="Exact finite snapshot comparisons passed, no formal proof",
+        datasets=datasets,
+        structural_changes=changes,
+    )

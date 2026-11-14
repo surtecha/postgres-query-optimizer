@@ -17,8 +17,14 @@ TOKENS = Counter("pgo_model_tokens_total", "Reported model tokens")
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
-        return json.dumps({"level": record.levelname, "event": record.getMessage(),
-                           **getattr(record, "fields", {})}, default=str)
+        return json.dumps(
+            {
+                "level": record.levelname,
+                "event": record.getMessage(),
+                **getattr(record, "fields", {}),
+            },
+            default=str,
+        )
 
 
 def setup(endpoint: str = "") -> Any:
@@ -26,9 +32,12 @@ def setup(endpoint: str = "") -> Any:
     handler.setFormatter(JsonFormatter())
     logging.getLogger("optimizer").handlers = [handler]
     logging.getLogger("optimizer").setLevel(logging.INFO)
-    provider = TracerProvider(resource=Resource.create({"service.name": "postgres-query-optimizer"}))
+    provider = TracerProvider(
+        resource=Resource.create({"service.name": "postgres-query-optimizer"})
+    )
     if endpoint:
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
         provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
     trace.set_tracer_provider(provider)
     return trace.get_tracer("optimizer")

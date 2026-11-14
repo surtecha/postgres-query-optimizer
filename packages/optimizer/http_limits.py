@@ -1,4 +1,5 @@
 """Bound request bodies including chunked requests before schema parsing."""
+
 from typing import Any
 
 from starlette.responses import JSONResponse
@@ -22,7 +23,9 @@ class BodyLimit:
             chunk = message.get("body", b"")
             length += len(chunk)
             if length > self.limit:
-                await JSONResponse({"error": "Request body exceeds 24000 bytes"}, status_code=413)(scope, receive, send)
+                await JSONResponse({"error": "Request body exceeds 24000 bytes"}, status_code=413)(
+                    scope, receive, send
+                )
                 return
             chunks.append(chunk)
             if not message.get("more_body", False):

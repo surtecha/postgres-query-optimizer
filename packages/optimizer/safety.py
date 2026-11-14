@@ -1,24 +1,66 @@
 """Positive SQL policy for a controlled schema, independent of model output."""
+
 import hashlib
 
 import sqlglot
 from sqlglot import exp
 from sqlglot.errors import ParseError
 
-TABLES = frozenset({"customers", "products", "orders", "order_items", "payments",
-                    "inventory_movements", "suppliers", "shipments"})
-FUNCTIONS = frozenset({"AND", "OR", "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "NULLIF", "ABS",
-                      "ROUND", "LOWER", "UPPER", "LENGTH", "EXTRACT", "DATE_TRUNC",
-                      "CAST", "TRY_CAST", "CASE", "IF", "ROW_NUMBER", "RANK", "DENSE_RANK",
-                      "GREATEST", "LEAST", "POWER", "FLOOR", "CEIL", "CEILING"})
+TABLES = frozenset(
+    {
+        "customers",
+        "products",
+        "orders",
+        "order_items",
+        "payments",
+        "inventory_movements",
+        "suppliers",
+        "shipments",
+    }
+)
+FUNCTIONS = frozenset(
+    {
+        "AND",
+        "OR",
+        "COUNT",
+        "SUM",
+        "AVG",
+        "MIN",
+        "MAX",
+        "COALESCE",
+        "NULLIF",
+        "ABS",
+        "ROUND",
+        "LOWER",
+        "UPPER",
+        "LENGTH",
+        "EXTRACT",
+        "DATE_TRUNC",
+        "CAST",
+        "TRY_CAST",
+        "CASE",
+        "IF",
+        "ROW_NUMBER",
+        "RANK",
+        "DENSE_RANK",
+        "GREATEST",
+        "LEAST",
+        "POWER",
+        "FLOOR",
+        "CEIL",
+        "CEILING",
+    }
+)
 # Every accepted node is data-only syntax. Unknown extensions fail closed.
-NODES = frozenset("""Select Subquery Union Intersect Except With CTE Table TableAlias Column
+NODES = frozenset(
+    """Select Subquery Union Intersect Except With CTE Table TableAlias Column
 Identifier Star Literal Null Boolean Alias From Join Where And Or Not Paren EQ NEQ GT GTE LT LTE
 Add Sub Mul Div Mod Neg In Between Is Like ILike Exists Distinct Group Having Order Ordered
 Limit Offset Tuple Case If When Window WindowSpec Partition Having DataType DataTypeParam
 Interval Var Cast TryCast Count Sum Avg Min Max Coalesce Nullif Abs Round Lower Upper Length
 Extract DateTrunc TimestampTrunc RowNumber Rank DenseRank Greatest Least Pow Floor Ceil
-Filter WithinGroup Fetch Lateral""".split())
+Filter WithinGroup Fetch Lateral""".split()
+)
 
 
 class UnsafeSQL(ValueError):
@@ -32,7 +74,9 @@ def validate(sql: str, schema: str = "commerce") -> exp.Query:
         statements = sqlglot.parse(sql, read="postgres")
     except ParseError as exc:
         raise UnsafeSQL("Invalid PostgreSQL syntax") from exc
-    if len(statements) != 1 or not isinstance(statements[0], (exp.Select, exp.Union, exp.Intersect, exp.Except)):
+    if len(statements) != 1 or not isinstance(
+        statements[0], (exp.Select, exp.Union, exp.Intersect, exp.Except)
+    ):
         raise UnsafeSQL("Exactly one SELECT query is required")
     tree = statements[0]
     ctes = {cte.alias_or_name for cte in tree.find_all(exp.CTE)}
@@ -61,7 +105,17 @@ def fingerprint(sql: str) -> str:
 
 def structure(sql: str) -> dict[str, str]:
     tree = validate(sql)
-    keys = ("expressions", "where", "joins", "group", "having", "order", "limit", "offset", "distinct")
+    keys = (
+        "expressions",
+        "where",
+        "joins",
+        "group",
+        "having",
+        "order",
+        "limit",
+        "offset",
+        "distinct",
+    )
     return {key: str(tree.args.get(key)) for key in keys}
 
 

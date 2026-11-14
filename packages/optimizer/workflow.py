@@ -1,4 +1,5 @@
 """Checkpointed, finite experiment graph. Every execution gate is deterministic."""
+
 import functools
 import hashlib
 import json
@@ -69,12 +70,19 @@ class Workflow:
                 FAILURES.labels(name).inc()
                 raise
             finally:
-                duration = time.monotonic()-start
+                duration = time.monotonic() - start
                 STAGES.labels(name, status).observe(duration)
-                event = {"stage": name, "tool_name": name, "status": status, "duration_seconds": duration}
+                event = {
+                    "stage": name,
+                    "tool_name": name,
+                    "status": status,
+                    "duration_seconds": duration,
+                }
                 self.store.event(state["session_id"], event)
-                logging.getLogger("optimizer").info("workflow_stage", extra={"fields": {
-                    "session_id": state["session_id"], **event}})
+                logging.getLogger("optimizer").info(
+                    "workflow_stage", extra={"fields": {"session_id": state["session_id"], **event}}
+                )
+
         return run
 
     def validation(self, state: State) -> State:
@@ -90,23 +98,36 @@ class Workflow:
 
     def generation(self, state: State) -> State:
         query = state["request"]["sql"]
-        context = {"metadata": state["metadata"], "diagnostics": state["diagnostics"],
-                   "remaining_candidates": self.settings.max_candidates,
-                   "remaining_seconds": max(0, self.settings.session_seconds - (time.time()-state["started_at"]))}
+        context = {
+            "metadata": state["metadata"],
+            "diagnostics": state["diagnostics"],
+            "remaining_candidates": self.settings.max_candidates,
+            "remaining_seconds": max(
+                0, self.settings.session_seconds - (time.time() - state["started_at"])
+            ),
+        }
         fallback = DeterministicProvider()
         candidates, usage = fallback.generate(query, context, self.settings.max_candidates)
         if state["request"]["provider"] == "openai":
             if self.settings.openai_api_key.get_secret_value():
-                proposed, model_usage = OpenAIProvider(self.settings).generate(query, context, self.settings.max_candidates)
+                proposed, model_usage = OpenAIProvider(self.settings).generate(
+                    query, context, self.settings.max_candidates
+                )
                 candidates = proposed + candidates
                 usage = model_usage
             else:
-                usage = {**usage, "requested_provider": "openai", "fallback_reason": "No model credential configured"}
+                usage = {
+                    **usage,
+                    "requested_provider": "openai",
+                    "fallback_reason": "No model credential configured",
+                }
         seen: set[str] = set()
         unique = []
         for candidate in candidates:
             try:
-                key = normalize(candidate.sql) + json.dumps(candidate.index.model_dump() if candidate.index else None, sort_keys=True)
+                key = normalize(candidate.sql) + json.dumps(
+                    candidate.index.model_dump() if candidate.index else None, sort_keys=True
+                )
             except UnsafeSQL:
                 key = candidate.sql
             if key not in seen:
@@ -122,24 +143,37 @@ class Workflow:
     def candidate(self, state: State) -> State:
         position = state["position"]
         candidate = Candidate.model_validate(state["candidates"][position])
-        identifier = hashlib.sha256((state["session_id"]+str(position)).encode()).hexdigest()[:24]
+        identifier = hashlib.sha256((state["session_id"] + str(position)).encode()).hexdigest()[:24]
         result: dict[str, Any] = {"id": identifier, **candidate.model_dump(), "accepted": False}
         try:
             validate(candidate.sql)
             result["safety"] = {"passed": True}
             if candidate.index:
-                self.db.index_ddl(self.admin, candidate.index, "pgo_exp_"+identifier)
+                self.db.index_ddl(self.admin, candidate.index, "pgo_exp_" + identifier)
             with self.db.reader() as conn:
                 self.db.plan(conn, candidate.sql)
-            result["validation"] = verify(self.db, state["request"]["sql"], candidate.sql).model_dump()
+            result["validation"] = verify(
+                self.db, state["request"]["sql"], candidate.sql
+            ).model_dump()
             self.guard(state)
             if result["validation"]["status"] == "differentially_validated":
-                result["benchmark"] = benchmark(self.db, self.admin, state["request"]["sql"], candidate,
-                    identifier, lambda: self.guard(state))
-                result["accepted"], result["rejection_reasons"] = accept(result["benchmark"],
-                    validated=True, min_improvement=self.settings.min_improvement, max_cv=self.settings.max_cv,
-                    index_bytes=result["benchmark"]["index_bytes"], max_index_bytes=self.settings.max_index_bytes,
-                    protected_pass=result["benchmark"]["protected_pass"])
+                result["benchmark"] = benchmark(
+                    self.db,
+                    self.admin,
+                    state["request"]["sql"],
+                    candidate,
+                    identifier,
+                    lambda: self.guard(state),
+                )
+                result["accepted"], result["rejection_reasons"] = accept(
+                    result["benchmark"],
+                    validated=True,
+                    min_improvement=self.settings.min_improvement,
+                    max_cv=self.settings.max_cv,
+                    index_bytes=result["benchmark"]["index_bytes"],
+                    max_index_bytes=self.settings.max_index_bytes,
+                    protected_pass=result["benchmark"]["protected_pass"],
+                )
             else:
                 result["rejection_reasons"] = [result["validation"]["reason"]]
         except (Cancelled, BudgetExceeded):
@@ -153,9 +187,17 @@ class Workflow:
             result["error"] = type(exc).__name__
             result["rejection_reasons"] = ["Candidate execution or deterministic validation failed"]
             FAILURES.labels(type(exc).__name__).inc()
-        self.store.event(state["session_id"], {"stage": "candidate_result", "candidate_id": identifier,
-                         "accepted": result["accepted"], "validation": result.get("validation"), "error": result.get("error")})
-        return {"position": position+1, "results": [*state["results"], result]}
+        self.store.event(
+            state["session_id"],
+            {
+                "stage": "candidate_result",
+                "candidate_id": identifier,
+                "accepted": result["accepted"],
+                "validation": result.get("validation"),
+                "error": result.get("error"),
+            },
+        )
+        return {"position": position + 1, "results": [*state["results"], result]}
 
     def route(self, state: State) -> str:
         return "candidate" if state["position"] < len(state["candidates"]) else "report"
@@ -164,38 +206,63 @@ class Workflow:
         valid = [r for r in state["results"] if r["accepted"]]
         best = max(valid, key=lambda r: r["benchmark"]["median_speedup"], default=None)
         decision = "validated_improvement" if best else "no_accepted_improvement"
-        report = {"session_id": state["session_id"], "decision": decision,
+        report = {
+            "session_id": state["session_id"],
+            "decision": decision,
             "original_sql": state["request"]["sql"],
             "recommended_sql": best["sql"] if best else state["request"]["sql"],
             "recommended_index": best["index"] if best else None,
             "best_candidate_id": best["id"] if best else None,
-            "fingerprint": state["fingerprint"], "baseline_plan": state["baseline"],
-            "diagnostics": state["diagnostics"], "environment": state["metadata"],
-            "candidates": state["results"], "model_usage": state["usage"],
-            "duration_seconds": time.time()-state["started_at"],
-            "policy": {"min_latency_reduction": self.settings.min_improvement,
-                "max_cv": self.settings.max_cv, "max_index_bytes": self.settings.max_index_bytes,
-                "repetitions": self.settings.repetitions, "max_candidates": self.settings.max_candidates,
-                "rounds": 1, "max_rounds": self.settings.max_rounds,
-                "equivalence_required": "differentially_validated", "confidence_lower_bound": ">1",
-                "protected_index_gate": "all 12 workloads, lower speedup bound >=0.9"},
-            "limitations": ["Finite comparisons do not prove equivalence", "Warm cache local measurements",
+            "fingerprint": state["fingerprint"],
+            "baseline_plan": state["baseline"],
+            "diagnostics": state["diagnostics"],
+            "environment": state["metadata"],
+            "candidates": state["results"],
+            "model_usage": state["usage"],
+            "duration_seconds": time.time() - state["started_at"],
+            "policy": {
+                "min_latency_reduction": self.settings.min_improvement,
+                "max_cv": self.settings.max_cv,
+                "max_index_bytes": self.settings.max_index_bytes,
+                "repetitions": self.settings.repetitions,
+                "max_candidates": self.settings.max_candidates,
+                "rounds": 1,
+                "max_rounds": self.settings.max_rounds,
+                "equivalence_required": "differentially_validated",
+                "confidence_lower_bound": ">1",
+                "protected_index_gate": "all 12 workloads, lower speedup bound >=0.9",
+            },
+            "limitations": [
+                "Finite comparisons do not prove equivalence",
+                "Warm cache local measurements",
                 "Read workload only, index write amplification is not measured",
-                "One proposal round, adaptive model follow-up is not implemented"]}
+                "One proposal round, adaptive model follow-up is not implemented",
+            ],
+        }
         SESSIONS.labels(decision).inc()
         return {"report": report}
 
     def compile(self, checkpointer: Any) -> Any:
         graph = StateGraph(State)
-        stages = {"validation": self.validation, "inspection": self.inspection, "baseline": self.baseline,
-                  "generation": self.generation, "candidate": self.candidate, "report": self.report}
+        stages = {
+            "validation": self.validation,
+            "inspection": self.inspection,
+            "baseline": self.baseline,
+            "generation": self.generation,
+            "candidate": self.candidate,
+            "report": self.report,
+        }
         for name, action in stages.items():
             graph.add_node(name, self.stage(name, action))
         graph.add_edge(START, "validation")
         graph.add_edge("validation", "inspection")
         graph.add_edge("inspection", "baseline")
         graph.add_edge("baseline", "generation")
-        graph.add_conditional_edges("generation", self.route, {"candidate": "candidate", "report": "report"})
-        graph.add_conditional_edges("candidate", self.route, {"candidate": "candidate", "report": "report"})
+        graph.add_conditional_edges(
+            "generation", self.route, {"candidate": "candidate", "report": "report"}
+        )
+        graph.add_conditional_edges(
+            "candidate", self.route, {"candidate": "candidate", "report": "report"}
+        )
         graph.add_edge("report", END)
         return graph.compile(checkpointer=checkpointer)

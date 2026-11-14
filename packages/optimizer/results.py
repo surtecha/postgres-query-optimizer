@@ -1,4 +1,5 @@
 """Exact typed bag comparison, independent of database execution."""
+
 from collections import Counter
 from typing import Any
 

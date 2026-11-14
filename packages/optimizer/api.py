@@ -10,8 +10,8 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 
 from optimizer.config import Settings
-from optimizer.models import OptimizeRequest
 from optimizer.http_limits import BodyLimit
+from optimizer.models import OptimizeRequest
 from optimizer.persistence import QueueFull, Store
 from optimizer.safety import UnsafeSQL, validate
 from optimizer.telemetry import setup
@@ -40,8 +40,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.middleware("http")
     async def request_id(request: Request, call_next: Any) -> Any:
         identifier = str(uuid.uuid4())
-        if request.headers.get("content-length", "0").isdigit() and int(request.headers.get("content-length", "0")) > 24000:
-            return JSONResponse({"error": "Request too large", "request_id": identifier}, status_code=413)
+        if (
+            request.headers.get("content-length", "0").isdigit()
+            and int(request.headers.get("content-length", "0")) > 24000
+        ):
+            return JSONResponse(
+                {"error": "Request too large", "request_id": identifier}, status_code=413
+            )
         with tracer.start_as_current_span("http.request") as span:
             span.set_attribute("request.id", identifier)
             response = await call_next(request)
@@ -50,7 +55,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(Exception)
     async def internal_error(request: Request, exc: Exception) -> JSONResponse:
-        return JSONResponse({"error": "Internal infrastructure failure", "category": type(exc).__name__}, status_code=503)
+        return JSONResponse(
+            {"error": "Internal infrastructure failure", "category": type(exc).__name__},
+            status_code=503,
+        )
 
     @app.get("/api/v1/health")
     def health() -> dict[str, str]:
@@ -82,7 +90,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "Workload not found") from exc
 
     @app.post("/api/v1/optimizations", status_code=202, dependencies=[Depends(auth)])
-    def submit(body: OptimizeRequest, idempotency_key: str | None = Header(None, max_length=128)) -> dict[str, str]:
+    def submit(
+        body: OptimizeRequest, idempotency_key: str | None = Header(None, max_length=128)
+    ) -> dict[str, str]:
         try:
             validate(body.sql)
             if body.workload_id and get_workload(body.workload_id)["sql"] != body.sql:
@@ -96,8 +106,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/v1/optimizations", dependencies=[Depends(auth)])
     @app.get("/api/v1/experiments", dependencies=[Depends(auth)])
-    def listing(offset: int = Query(0, ge=0), limit: int = Query(25, ge=1, le=100),
-                status: str | None = Query(None, max_length=24)) -> list[dict[str, Any]]:
+    def listing(
+        offset: int = Query(0, ge=0),
+        limit: int = Query(25, ge=1, le=100),
+        status: str | None = Query(None, max_length=24),
+    ) -> list[dict[str, Any]]:
         return jsonable_encoder(store.list(offset, limit, status))
 
     def load(identifier: str) -> dict[str, Any]:
@@ -111,11 +124,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def detail(identifier: str) -> dict[str, Any]:
         return load(identifier)
 
-    @app.post("/api/v1/optimizations/{identifier}/cancel", status_code=202, dependencies=[Depends(auth)])
+    @app.post(
+        "/api/v1/optimizations/{identifier}/cancel", status_code=202, dependencies=[Depends(auth)]
+    )
     def cancel(identifier: str) -> dict[str, Any]:
         load(identifier)
-        return {"cancellation_requested": store.cancel(identifier),
-                "behavior": "Checked between stages and benchmark trials. Active statements finish or time out."}
+        return {
+            "cancellation_requested": store.cancel(identifier),
+            "behavior": "Checked between stages and benchmark trials. Active statements "
+            "finish or time out.",
+        }
 
     @app.get("/api/v1/optimizations/{identifier}/{section}", dependencies=[Depends(auth)])
     def section(identifier: str, section: str) -> Any:
@@ -131,8 +149,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if section == "benchmarks":
             return [{"id": c["id"], "benchmark": c.get("benchmark")} for c in candidates]
         if section == "plans":
-            return {"baseline": report.get("baseline_plan"), "candidates": [
-                {"id": c["id"], "plans": c.get("benchmark", {}).get("plans")} for c in candidates]}
+            return {
+                "baseline": report.get("baseline_plan"),
+                "candidates": [
+                    {"id": c["id"], "plans": c.get("benchmark", {}).get("plans")}
+                    for c in candidates
+                ],
+            }
         raise HTTPException(404, "Unknown report section")
 
     return app
