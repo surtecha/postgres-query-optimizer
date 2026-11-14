@@ -4,12 +4,14 @@ Controlled SQL and index experiments with deterministic safety gates and measure
 candidate acceptance. PostgreSQL selects execution plans. This project explores
 SQL formulations and physical indexes beyond a fixed query and schema.
 
-**Execution status:** implementation is incomplete and has not passed end-to-end
-acceptance. In the selected Python 3.12.16 environment, 35 unit tests pass, but
-full discovery fails because SQLGlot is missing. The earlier 47-test result belongs
-to the previous environment. Docker, PostgreSQL, full dependencies, frontend
-checks and GitHub publication remain unverified.
-No measured speedups or working-application screenshots are claimed.
+**Execution status:** incomplete end-to-end acceptance. In the selected Python
+3.12.16 environment, 68 tests pass and 8 PostgreSQL tests are skipped. Ruff,
+formatting, strict Mypy, ESLint and strict TypeScript checks pass. The frontend
+production build passes with webpack on Node 22; default Turbopack is blocked by
+the execution sandbox. Docker is running on the host, but this session cannot
+access its socket. PostgreSQL execution, real browser workflows, benchmarks,
+GitHub publication and CI remain unverified. No measured speedups or application
+screenshots are claimed.
 
 ## Implemented code
 
@@ -67,13 +69,25 @@ For a host frontend development session:
 
 ```sh
 cd apps/web
-npm install
+npm ci
 npm run dev
 ```
 
-Python and npm dependency locks could not be generated because registry DNS was
-unavailable. Dependency ranges are declared. A reproducibly locked release is not
-yet available. Never install Python dependencies globally.
+`apps/web/package-lock.json` records the installed npm resolution; CI and frontend
+containers use `npm ci`. `requirements.lock` and `requirements-dev.lock` pin the
+installed Python runtime/build and development dependency closures. Regenerate
+Python snapshots with `python scripts/lock_dependencies.py` after an authorized
+installation and successful `pip check`. These snapshots were generated on macOS
+arm64; clean installation and Linux compatibility remain unverified. They are not
+a verified reproducible release. Never install Python dependencies globally.
+
+Install into the existing selected environment only:
+
+```sh
+python -m pip install --no-user -r requirements-dev.lock
+python -m pip install --no-user --no-build-isolation --no-deps -e .
+python -m pip check
+```
 
 ## Dataset generation
 
@@ -116,7 +130,8 @@ observations. Acceptance requires finite correctness validation, a default 10
 percent latency reduction, lower speedup bound above one and bounded variance.
 Index experiments additionally check all protected workloads.
 
-**Verified benchmark results: none.** No PostgreSQL service was available. Statistical
+**Verified benchmark results: none.** No PostgreSQL service was accessible from
+the execution session. Statistical
 unit fixtures test calculations and are not benchmark evidence. See
 [benchmark methodology](docs/benchmarking.md) and [verification](docs/verification.md).
 
@@ -171,10 +186,11 @@ CI has not run and is not claimed to pass.
 
 ## Limitations and remaining work
 
-The system is not production-ready. Full dependencies, lint, type checks, frontend
-build, database execution, recovery and browser behavior remain unverified. Network
-access and a Docker engine are required to finish acceptance. No GitHub repository
-has been created. Local commits are stored through `scripts/git.sh` because this
+The system is not production-ready. Local static checks and a webpack production
+build pass. HTTP safety and SQLite checkpoint recovery are tested with database
+doubles; real PostgreSQL worker recovery remains unverified. Docker socket and
+network access from the execution session are required to finish database,
+browser and benchmark acceptance. No GitHub repository has been created. Local commits are stored through `scripts/git.sh` because this
 host disallows writing `.git`.
 
 Finite comparisons cannot prove arbitrary SQL equivalence. Unsupported functions
@@ -183,7 +199,8 @@ Cancellation waits for the active statement timeout. One worker and one proposal
 round are implemented. Write throughput, HypoPG, formal proofs, distributed workers,
 adaptive model follow-up and aggregate AI-value evaluation remain future work.
 
-Before a release, resolve dependency locks, run every configured check, fix runtime
-failures, execute measured evaluation and capture actual screenshots. Publish with
+Before a release, verify clean installation from the dependency locks, run the
+remaining database and browser checks, fix runtime failures, execute measured
+evaluation and capture actual screenshots. Publish with
 `scripts/publish.sh` after GitHub CLI authentication and network access are available.
 That script refuses a dirty worktree and verifies the pushed commit without force.

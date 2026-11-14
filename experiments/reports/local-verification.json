@@ -1,20 +1,21 @@
 {
-  "timestamp": "2026-11-14T06:32:17.422570+00:00",
+  "timestamp": "2026-11-14T10:28:00.645849+00:00",
   "python": "3.12.16",
   "interpreter": "/Users/surtecha/Tools/miniconda/envs/postgres-query-optimizer/bin/python",
   "unit_tests": {
-    "status": "failed",
-    "executed": 35,
-    "passed": 35,
+    "runner": "unittest; pytest-style functions are not included",
+    "status": "passed",
+    "executed": 52,
+    "passed": 52,
     "failures": 0,
-    "errors": 1,
+    "errors": 0,
     "skipped": 0,
-    "discovery_errors": 1
+    "discovery_errors": 0
   },
   "python_syntax": "passed",
   "tools": {
-    "docker": false,
-    "gh": false,
+    "docker": true,
+    "gh": true,
     "psql": false,
     "node": true,
     "npm": true
@@ -25,12 +26,7 @@
   "lint": "not_run",
   "typecheck": "not_run",
   "benchmarks": "not_run",
-  "missing_check_modules": [
-    "sqlglot",
-    "pytest",
-    "ruff",
-    "mypy"
-  ],
+  "missing_check_modules": [],
   "network": "not_checked_by_this_script",
   "github_publication": "not_checked_by_this_script"
 }
