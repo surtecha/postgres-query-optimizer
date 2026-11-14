@@ -2,6 +2,18 @@
 
 ## Current acceptance status
 
+The subsequent supplied host run passed `sh scripts/verify_stack.sh` for
+implementation commit `ada8f75`: five image builds, stack readiness, 12 integration
+checks in 1.45 seconds, two browser tests in 5.1 seconds, and both process recovery
+tests in 4.91 seconds. The worker restarted successfully. All 12 deterministic
+evaluations completed with ten validated candidates and zero accepted changes.
+All model arms remain not_run. Generated reports are preserved under
+`experiments/reports/acceptance`; refreshed screenshots are also preserved.
+`experiments/reports/host-acceptance-verification.json` records the supplied results
+and artifact hashes. The host publication command stopped because these generated
+files were uncommitted. Remote publication/CI and dependency audits remain pending.
+This host evidence supersedes the unexecuted runtime-test statements below.
+
 This section supersedes the historical status statements below. On 14 November
 2026, `python scripts/verify_local.py` passed all ten local checks using the
 selected Python 3.12.16 environment: dependency consistency, 87 Python tests,

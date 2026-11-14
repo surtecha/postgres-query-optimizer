@@ -1,0 +1,60 @@
+{
+  "source": "Supplied host verification output and workspace acceptance artifacts",
+  "implementation_commit": "ada8f75",
+  "container_builds": {
+    "status": "passed",
+    "images": 5
+  },
+  "stack_readiness": "passed",
+  "integration": {
+    "status": "passed",
+    "tests": 12,
+    "seconds": 1.45
+  },
+  "browser": {
+    "status": "passed",
+    "tests": 2,
+    "seconds": 5.1
+  },
+  "worker_process_recovery": {
+    "status": "passed",
+    "tests": 2,
+    "seconds": 4.91,
+    "cases": [
+      "resume",
+      "cancel"
+    ]
+  },
+  "worker_restart": "passed",
+  "deterministic_evaluation": {
+    "status": "completed",
+    "workloads": 12,
+    "accepted_candidates": 0
+  },
+  "model_evaluation": "not_run",
+  "publication": "blocked_by_uncommitted_generated_evidence_in_supplied_run",
+  "remote_ci": "not_verified",
+  "dependency_audits": "not_verified",
+  "artifacts": [
+    {
+      "path": "experiments/reports/acceptance/evaluation.json",
+      "sha256": "146e99d43de4724550a909b6f80f1b8f85163e65fbff249ff31c3b856d454b39"
+    },
+    {
+      "path": "experiments/reports/acceptance/evaluation.md",
+      "sha256": "33a8b486011619bfe07f162cfd2f4f4fc6f4486d90e1ec0793465a2db74545ca"
+    },
+    {
+      "path": "experiments/reports/acceptance/summary.json",
+      "sha256": "537289a1d208df3624f7a21ed07197a772c467a9714578fa1a9284b715280764"
+    },
+    {
+      "path": "docs/assets/workspace-desktop.png",
+      "sha256": "84022ed30e4e9ead4e3ba153b67e975b15b472b72120c6df4e40abee7c8a0fe3"
+    },
+    {
+      "path": "docs/assets/workspace-mobile.png",
+      "sha256": "f7ca86d0490d679dc945f931a4bdc47c4dcc12d30bd8af1b911cad14cc941fb6"
+    }
+  ]
+}

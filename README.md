@@ -4,17 +4,20 @@ Controlled SQL and index experiments with deterministic safety gates and measure
 candidate acceptance. PostgreSQL selects execution plans. This project explores
 SQL formulations and physical indexes beyond a fixed query and schema.
 
-**Execution status:** incomplete release acceptance. In the selected Python
-3.12.16 environment, 87 tests pass and 10 PostgreSQL/process tests are skipped. Ruff,
+**Execution status:** local runtime acceptance passed; remote release checks pending.
+In the selected Python 3.12.16 environment, 87 tests pass. Ruff,
 formatting, strict Mypy, ESLint and strict TypeScript checks pass. The frontend
 production build uses webpack and passes with the current Node 26 runtime.
 The configured Node 22 build passed during the preceding verification. This
 session cannot access the Docker socket. Supplied host output confirms all five
 application image builds, successful stack startup, and 12 integration tests
-passing against PostgreSQL 16. Both host Playwright tests pass and real desktop
+passing against PostgreSQL 16. Both real worker process recovery/cancellation
+tests pass. Both host Playwright tests pass and real desktop
 and mobile screenshots are available. The small-dataset evaluation completed all
 12 deterministic workloads with 10 validated candidates and no accepted changes.
-Model evaluation and CI remain pending. The GitHub remote is configured; current
+The latest [acceptance reports](experiments/reports/acceptance/evaluation.md) reproduce
+12 completed deterministic evaluations with no accepted changes. Model evaluation,
+dependency audits and remote CI remain pending. The GitHub remote is configured; current
 remote contents cannot be verified because GitHub DNS is unavailable in this session.
 
 ## Implemented code
@@ -204,8 +207,8 @@ CI has not run and is not claimed to pass.
 
 The system is not production-ready. Local static checks and a webpack production
 build pass. HTTP safety and SQLite checkpoint recovery are tested with database
-doubles. Two real process recovery tests are implemented and included in CI, but
-remain unexecuted. Docker socket access is denied and GitHub DNS is unavailable
+doubles. Both real process recovery tests passed in the supplied host run and
+are included in CI. Docker socket access is denied and GitHub DNS is unavailable
 in the execution session. The configured remote is
 https://github.com/surtecha/postgres-query-optimizer.git. Local commits are stored
 through `scripts/git.sh` because this host disallows writing `.git`.
@@ -221,8 +224,9 @@ Playwright Chromium. It builds the development images, runs PostgreSQL and brows
 checks, stops the worker for process recovery/cancellation tests, restores the
 worker, and evaluates all 12 deterministic workloads without paid model calls.
 It preserves project volumes and saves results in `experiments/reports/acceptance`.
-The process tests require a drained queue. The local attempt stopped before builds
-because Docker builder metadata is not writable in this session.
+The process tests require a drained queue. The supplied host run passed all stack
+checks and completed all deterministic evaluations. Direct execution remains blocked
+by Docker permissions in this session.
 
 Before a release, complete those checks, dependency audits and remote CI. Publish
 with `sh scripts/publish.sh` after GitHub authentication and network access are

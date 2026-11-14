@@ -1,0 +1,60 @@
+{
+  "deterministic": {
+    "requested_workloads": 12,
+    "executed_workloads": 12,
+    "completed_workloads": 12,
+    "evaluated_workloads": 12,
+    "fallback_only_workloads": 0,
+    "not_run": 0,
+    "valid_candidate_rate": 1.0,
+    "equivalence_pass_rate": 1.0,
+    "candidate_acceptance_rate": 0.0,
+    "workloads_improved_rate": 0.0,
+    "accepted_workloads_regressed_rate": 0.0,
+    "experimental_candidate_regression_rate": 0.4,
+    "median_accepted_speedup": null,
+    "model_candidates": 0,
+    "accepted_model_candidates": 0,
+    "total_optimization_seconds": 21.394190073013306,
+    "model_calls": 0,
+    "tokens": 0,
+    "estimated_model_cost_usd": 0,
+    "cost_per_success_usd": null,
+    "database_execution_ms": 5055.108,
+    "limitations": [
+      "Metrics cover completed reports only",
+      "Database time excludes setup and correctness reads",
+      "Cost per success is unavailable without verified provider pricing",
+      "Model fallback-only sessions are excluded from model-arm outcome rates"
+    ]
+  },
+  "openai": {
+    "requested_workloads": 12,
+    "executed_workloads": 0,
+    "completed_workloads": 0,
+    "evaluated_workloads": 0,
+    "fallback_only_workloads": 0,
+    "not_run": 12,
+    "valid_candidate_rate": null,
+    "equivalence_pass_rate": null,
+    "candidate_acceptance_rate": null,
+    "workloads_improved_rate": null,
+    "accepted_workloads_regressed_rate": null,
+    "experimental_candidate_regression_rate": null,
+    "median_accepted_speedup": null,
+    "model_candidates": 0,
+    "accepted_model_candidates": 0,
+    "total_optimization_seconds": 0,
+    "model_calls": 0,
+    "tokens": null,
+    "estimated_model_cost_usd": null,
+    "cost_per_success_usd": null,
+    "database_execution_ms": 0,
+    "limitations": [
+      "Metrics cover completed reports only",
+      "Database time excludes setup and correctness reads",
+      "Cost per success is unavailable without verified provider pricing",
+      "Model fallback-only sessions are excluded from model-arm outcome rates"
+    ]
+  }
+}
