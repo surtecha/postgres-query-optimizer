@@ -53,6 +53,10 @@ class Database:
 
     def plan(self, conn: Any, query: str, analyze: bool = False) -> dict[str, Any]:
         validate(query)
+        if analyze:
+            # EXPLAIN ANALYZE executes the query. Enforce the estimate budget first,
+            # including callers that request analyzed plans directly.
+            self.plan(conn, query)
         options = "ANALYZE, BUFFERS, TIMING, FORMAT JSON" if analyze else "FORMAT JSON"
         plan: dict[str, Any] = conn.execute(f"EXPLAIN ({options}) " + query).fetchone()[0][0]
         if float(plan["Plan"]["Total Cost"]) > self.settings.max_plan_cost:
@@ -180,9 +184,6 @@ class Database:
         admin.execute(sql.SQL("DROP INDEX IF EXISTS commerce.{}").format(sql.Identifier(name)))
 
     def timed(self, conn: Any, query: str) -> tuple[float, dict[str, Any]]:
-        estimate = self.plan(conn, query)
-        if estimate["Plan"]["Total Cost"] > self.settings.max_plan_cost:
-            raise BudgetExceeded("Estimated cost exceeded")
         start = time.perf_counter()
         plan = self.plan(conn, query, analyze=True)
         # Execution Time is PostgreSQL server time, client wall time is recorded separately.
