@@ -8,9 +8,14 @@ test("submit a real workload and inspect evidence",async({page})=>{
  await expect(page.getByText(/Session .* \| completed/)).toBeVisible({timeout:170000});
  await page.getByText("Original execution plan",{exact:true}).click();
  await expect(page.getByText("Actual rows / loop").first()).toBeVisible();
- await page.screenshot({path:"../../docs/assets/workspace-desktop.png",fullPage:true});
+ await page.evaluate(()=>window.scrollTo(0,0));
+ await expect(page.locator(".recharts-bar-rectangle").first()).toBeVisible();
+ await page.screenshot({path:"../../docs/assets/workspace-desktop.png",fullPage:true,animations:"disabled"});
  await page.setViewportSize({width:390,height:844});
- await page.screenshot({path:"../../docs/assets/workspace-mobile.png",fullPage:true});
+ await page.evaluate(()=>window.scrollTo(0,0));
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+ await expect(page.getByRole("region",{name:"Paired trial measurements"})).toBeVisible();
+ await page.screenshot({path:"../../docs/assets/workspace-mobile.png",fullPage:true,animations:"disabled"});
  const download=page.waitForEvent("download");
  await page.getByRole("button",{name:"Export JSON report"}).click();
  await expect((await download).suggestedFilename()).toMatch(/^optimization-/);

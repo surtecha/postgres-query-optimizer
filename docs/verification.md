@@ -243,3 +243,23 @@ optimization-completion wait remains unchanged.
 Frontend lint, strict types, all six origin unit tests and the production build
 pass. The full browser flow still requires a rebuilt host frontend and a new
 Playwright run. No successful browser run or screenshot is claimed yet.
+
+## Supplied successful browser run
+
+After the frontend rebuild, host Playwright reports both tests passed in 5.5
+seconds. This covers submission, session completion, execution plan inspection,
+report download and unsafe SQL rejection. Desktop and mobile PNGs were generated
+and inspected directly from the workspace. The completed index experiment retained
+the original query because the protected workload regression gate failed.
+
+The captures exposed document-wide mobile overflow, a chart captured during its
+entrance animation, and sticky navigation captured after the test had scrolled.
+Benchmark trial tables now use a keyboard-accessible horizontal scroll region.
+Long index identifiers wrap, functional chart animations are disabled, and capture
+steps return to the document top. The browser test now asserts that the mobile
+document width stays within 390 pixels. The successful run predates these stronger
+visual checks, so a refreshed host run and captures remain required.
+
+`experiments/reports/host-browser-verification.json` records the supplied run and
+the inspected screenshot dimensions and hashes. The full 12-workload evaluation,
+model evaluation when credentials are available, publication and CI remain pending.

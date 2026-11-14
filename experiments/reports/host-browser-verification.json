@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-14",
+  "source": "User-supplied host Playwright output and inspected PNG files",
+  "browser_tests": {
+    "passed": 2,
+    "failed": 0,
+    "duration_seconds": 5.5
+  },
+  "covered": [
+    "workload selection",
+    "optimization submission and completion",
+    "execution plan inspection",
+    "JSON report download",
+    "unsafe SQL rejection"
+  ],
+  "screenshots": [
+    {
+      "path": "docs/assets/workspace-desktop.png",
+      "width": 1280,
+      "height": 4818,
+      "sha256": "ec8d50135844f6bac500ef9812e108f48bb6768e27672e810482038109562c68"
+    },
+    {
+      "path": "docs/assets/workspace-mobile.png",
+      "width": 992,
+      "height": 6003,
+      "sha256": "59991e0a169c6a693a307f177cb6818d47aae937971b978b71e730e6f7462553"
+    }
+  ],
+  "observed_decision": "original query retained, candidate rejected by protected workload gate",
+  "rendering_findings": [
+    "mobile horizontal overflow",
+    "chart captured during animation",
+    "sticky navigation captured after scrolling"
+  ],
+  "layout_corrections": "implemented, host browser rerun pending",
+  "full_workload_evaluation": "pending",
+  "accepted_performance_improvement": null
+}

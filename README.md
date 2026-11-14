@@ -11,9 +11,9 @@ production build uses webpack and passes with the current Node 26 runtime.
 The configured Node 22 build passed during the preceding verification. This
 session cannot access the Docker socket. Supplied host output confirms all five
 application image builds, successful stack startup, and 12 integration tests
-passing against PostgreSQL 16. Real browser workflows, benchmarks, GitHub
-publication and CI remain unverified. No measured speedups or application
-screenshots are claimed.
+passing against PostgreSQL 16. Both host Playwright tests pass and real desktop
+and mobile screenshots are available. Full workload evaluation, GitHub publication
+and CI remain pending. No accepted performance improvement is claimed.
 
 ## Implemented code
 
@@ -132,9 +132,9 @@ observations. Acceptance requires finite correctness validation, a default 10
 percent latency reduction, lower speedup bound above one and bounded variance.
 Index experiments additionally check all protected workloads.
 
-**Verified benchmark results: none.** No PostgreSQL service was accessible from
-the execution session. Statistical
-unit fixtures test calculations and are not benchmark evidence. See
+The browser session completed a real index experiment and retained the original
+query because the protected workload regression gate failed. Full machine-readable
+evaluation results are pending. Statistical unit fixtures are not benchmark evidence. See
 [benchmark methodology](docs/benchmarking.md) and [verification](docs/verification.md).
 
 ```sh
@@ -169,9 +169,11 @@ npm run build
 npm run test:e2e
 ```
 
-Playwright captures real desktop and mobile screenshots to `docs/assets` after a
-successful session. Screenshots are currently absent because the stack could not
-be started. CI definitions require the same checks and do not require paid APIs.
+Playwright captured a real completed session. The [desktop capture](docs/assets/workspace-desktop.png)
+and [mobile capture](docs/assets/workspace-mobile.png) show actual plans, trials
+and the rejection decision. Screenshot review identified rendering defects.
+Layout and capture corrections are implemented, with refreshed host captures pending.
+CI definitions require the same checks and do not require paid APIs.
 CI has not run and is not claimed to pass.
 
 ## Repository layout
