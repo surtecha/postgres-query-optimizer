@@ -73,7 +73,7 @@ def evaluate(settings: Settings, output: Path, identifiers: list[str]) -> None:
             "",
             "Real measurements only. Missing provider runs remain not_run.",
             "",
-            "| Workload | Provider | Status | Best paired speedup |",
+            "| Workload | Provider | Status | Best accepted paired speedup |",
             "|---|---|---|---|",
         ]
         for item in results:

@@ -12,8 +12,9 @@ The configured Node 22 build passed during the preceding verification. This
 session cannot access the Docker socket. Supplied host output confirms all five
 application image builds, successful stack startup, and 12 integration tests
 passing against PostgreSQL 16. Both host Playwright tests pass and real desktop
-and mobile screenshots are available. Full workload evaluation, GitHub publication
-and CI remain pending. No accepted performance improvement is claimed.
+and mobile screenshots are available. The small-dataset evaluation completed all
+12 deterministic workloads with 10 validated candidates and no accepted changes.
+Model evaluation, GitHub publication and CI remain pending.
 
 ## Implemented code
 
@@ -133,8 +134,9 @@ percent latency reduction, lower speedup bound above one and bounded variance.
 Index experiments additionally check all protected workloads.
 
 The browser session completed a real index experiment and retained the original
-query because the protected workload regression gate failed. Full machine-readable
-evaluation results are pending. Statistical unit fixtures are not benchmark evidence. See
+query because the protected workload regression gate failed. The [small-dataset evaluation](experiments/reports/host-small/analysis.md) records
+12 completed deterministic sessions, 10 validated candidates and no accepted
+recommendations. Model arms were not run because no credential was configured. Statistical unit fixtures are not benchmark evidence. See
 [benchmark methodology](docs/benchmarking.md) and [verification](docs/verification.md).
 
 ```sh
@@ -172,7 +174,8 @@ npm run test:e2e
 Playwright captured a real completed session. The [desktop capture](docs/assets/workspace-desktop.png)
 and [mobile capture](docs/assets/workspace-mobile.png) show actual plans, trials
 and the rejection decision. Screenshot review identified rendering defects.
-Layout and capture corrections are implemented, with refreshed host captures pending.
+Refreshed captures were inspected at desktop width 1280 and mobile width 390.
+Charts are visible and the mobile document no longer expands beyond the viewport.
 CI definitions require the same checks and do not require paid APIs.
 CI has not run and is not claimed to pass.
 
