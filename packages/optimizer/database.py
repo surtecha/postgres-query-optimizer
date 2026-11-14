@@ -88,7 +88,7 @@ class Database:
             try:
                 # A terminated worker may have left a committed experimental index behind.
                 stale = admin.execute("SELECT indexname FROM pg_indexes WHERE schemaname='commerce' "
-                                      "AND indexname LIKE 'pgo_exp_%%'").fetchall()
+                                      "AND left(indexname, 8) = 'pgo_exp_'").fetchall()
                 for (name,) in stale:
                     self.drop_index(admin, name)
                 yield admin

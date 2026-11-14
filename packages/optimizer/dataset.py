@@ -11,7 +11,11 @@ def generate(dsn: str, size: str, seed: int, schema_file: Path) -> None:
     count = SIZES[size]
     customers, products = max(1000, count // 10), max(500, count // 100)
     with psycopg.connect(dsn) as conn:
-        conn.execute("SELECT pg_advisory_xact_lock(%s)", (LOCK_ID,))
+        identity = conn.execute("SELECT current_database(), current_user").fetchone()
+        if identity != ("pgo_benchmark", "pgo_experiment"):
+            raise ValueError("Generation requires pgo_experiment on pgo_benchmark")
+        if not conn.execute("SELECT pg_try_advisory_xact_lock(%s)", (LOCK_ID,)).fetchone()[0]:
+            raise RuntimeError("An experiment is active, dataset regeneration refused")
         conn.execute(schema_file.read_text())
         conn.execute("TRUNCATE commerce.order_items, commerce.payments, commerce.shipments, "
                      "commerce.inventory_movements, commerce.orders, commerce.products, "

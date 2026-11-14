@@ -3,7 +3,9 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 LANGGRAPH_STRICT_MSGPACK=true
 COPY pyproject.toml ./
 COPY packages ./packages
-RUN python -m pip install --no-cache-dir . && useradd --create-home --uid 10001 optimizer
+ARG INSTALL_DEV=false
+RUN if [ "$INSTALL_DEV" = true ]; then python -m pip install --no-cache-dir ".[dev]"; else python -m pip install --no-cache-dir .; fi
+RUN useradd --create-home --uid 10001 optimizer
 COPY datasets ./datasets
 COPY infrastructure/migrations ./infrastructure/migrations
 COPY alembic.ini ./

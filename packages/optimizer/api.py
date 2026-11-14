@@ -11,6 +11,7 @@ from sqlalchemy import text
 
 from optimizer.config import Settings
 from optimizer.models import OptimizeRequest
+from optimizer.http_limits import BodyLimit
 from optimizer.persistence import QueueFull, Store
 from optimizer.safety import UnsafeSQL, validate
 from optimizer.telemetry import setup
@@ -34,10 +35,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="PostgreSQL Query Performance Engineer", version="0.1.0", lifespan=lifespan)
 
+    app.add_middleware(BodyLimit)
+
     @app.middleware("http")
     async def request_id(request: Request, call_next: Any) -> Any:
         identifier = str(uuid.uuid4())
-        if int(request.headers.get("content-length", "0")) > 24000:
+        if request.headers.get("content-length", "0").isdigit() and int(request.headers.get("content-length", "0")) > 24000:
             return JSONResponse({"error": "Request too large", "request_id": identifier}, status_code=413)
         with tracer.start_as_current_span("http.request") as span:
             span.set_attribute("request.id", identifier)

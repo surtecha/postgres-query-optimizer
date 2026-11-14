@@ -69,7 +69,7 @@ class OpenAIProvider:
         if len((system+payload).encode()) + 1536 > self.settings.max_model_tokens:
             return [], {"provider": "openai", "calls": 0, "tokens": 0, "error": "Context exceeds conservative token budget", "estimated_cost_usd": None}
         started = time.monotonic()
-        for attempt in range(3):
+        for attempt in range(1):
             try:
                 response = self.client.chat.completions.create(model=self.settings.model,
                     messages=[{"role": "system", "content": system}, {"role": "user", "content": payload}],

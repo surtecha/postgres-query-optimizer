@@ -3,7 +3,7 @@ test("submit a real workload and inspect evidence",async({page})=>{
  await page.goto("/");
  await expect(page.getByRole("heading",{name:"Query performance",exact:true})).toBeVisible();
  await page.getByLabel("Workload",{exact:true}).selectOption("customer_lookup");
- await expect(page.getByLabel("PostgreSQL query")).toContainText("commerce.orders");
+ await expect(page.getByLabel("PostgreSQL query")).toHaveValue(/commerce.orders/);
  await page.getByRole("button",{name:"Run optimization"}).click();
  await expect(page.getByText(/Session .* \| completed/)).toBeVisible({timeout:170000});
  await page.getByText("Original execution plan",{exact:true}).click();

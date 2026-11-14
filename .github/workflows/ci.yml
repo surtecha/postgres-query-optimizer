@@ -42,11 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: Build and start isolated stack
-        run: docker compose up --build -d
+        run: |
+          docker compose build --build-arg INSTALL_DEV=true
+          docker compose up --no-build -d
       - name: Wait for readiness
         run: |
           for n in $(seq 1 90); do
@@ -57,7 +56,6 @@ jobs:
           exit 1
       - name: PostgreSQL integration tests in isolated container
         run: |
-          docker compose exec -T api python -m pip install --no-cache-dir pytest httpx
           docker compose cp tests api:/app/tests
           docker compose exec -T -e PGO_INTEGRATION=1 api python -m pytest /app/tests/integration -v
       - name: Browser integration
