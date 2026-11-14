@@ -31,3 +31,18 @@ class BagTests(unittest.TestCase):
 
     def test_nested(self):
         self.assertTrue(equal_rows([([1,None],)], [([1,None],)], False))
+
+    def test_empty_object_is_not_empty_array(self):
+        self.assertFalse(equal_rows([({},)], [([],)], False))
+
+    def test_object_is_not_array_of_pairs(self):
+        self.assertFalse(equal_rows([({"a": 1},)], [([["a", 1]],)], False))
+
+    def test_nested_container_types_preserved(self):
+        self.assertFalse(equal_rows([({"a": []},)], [({"a": {}},)], True))
+
+    def test_object_key_order_independent(self):
+        self.assertTrue(equal_rows([({"a": 1, "b": 2},)], [({"b": 2, "a": 1},)], False))
+
+    def test_tuple_is_not_list(self):
+        self.assertFalse(equal_rows([((1, 2),)], [([1, 2],)], False))

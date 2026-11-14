@@ -4,11 +4,12 @@ from typing import Any
 
 
 def canonical(value: Any) -> Any:
+    kind = (type(value).__module__, type(value).__qualname__)
     if isinstance(value, (tuple, list)):
-        return tuple(canonical(item) for item in value)
+        return (kind, tuple(canonical(item) for item in value))
     if isinstance(value, dict):
-        return tuple(sorted((canonical(k), canonical(v)) for k, v in value.items()))
-    return (type(value).__qualname__, repr(value))
+        return (kind, frozenset((canonical(k), canonical(v)) for k, v in value.items()))
+    return (kind, repr(value))
 
 
 def equal_rows(left: list[Any], right: list[Any], ordered: bool) -> bool:
