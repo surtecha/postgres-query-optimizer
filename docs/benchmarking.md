@@ -32,8 +32,11 @@ Write amplification is disclosed but write throughput is not measured.
 
 p95 is omitted below 40 observations. Small sample bootstrap intervals are reported
 with a warning. A bootstrap cannot remove cache effects, autocorrelation, noisy
-neighbors or configuration bias. There are no verified speedups in this checkout
-because PostgreSQL could not be started in the execution environment.
+neighbors or configuration bias. The recorded small-dataset acceptance run completed
+all 12 deterministic workloads and validated ten candidates. No candidate passed all
+acceptance gates. Target-query speedups and rejection reasons are available in the
+[raw evaluation](../experiments/reports/acceptance/evaluation.json); aggregate outcomes
+are recorded in the [summary](../experiments/reports/acceptance/summary.json).
 
 ## Reproduction
 
@@ -43,4 +46,5 @@ docker compose exec api pg-optimizer evaluate --workloads customer_lookup --outp
 docker compose cp api:/app/experiments/reports/lookup experiments/reports/lookup
 ```
 
-These stack commands have not been executed successfully in the current environment.
+The recorded results cover the small dataset with seed 42. Model-assisted evaluation
+and medium/large dataset measurements remain unexecuted.

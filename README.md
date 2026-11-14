@@ -1,103 +1,191 @@
-# Autonomous PostgreSQL Query Performance Engineer
+<div align="center">
 
-Controlled SQL and index experiments with deterministic safety gates and measured
-candidate acceptance. PostgreSQL selects execution plans. This project explores
-SQL formulations and physical indexes beyond a fixed query and schema.
+# PostgreSQL Query Optimizer
 
-**Execution status:** local runtime acceptance passed; remote release checks pending.
-In the selected Python 3.12.16 environment, 87 tests pass. Ruff,
-formatting, strict Mypy, ESLint and strict TypeScript checks pass. The frontend
-production build uses webpack and passes with the current Node 26 runtime.
-The configured Node 22 build passed during the preceding verification. This
-session cannot access the Docker socket. Supplied host output confirms all five
-application image builds, successful stack startup, and 12 integration tests
-passing against PostgreSQL 16. Both real worker process recovery/cancellation
-tests pass. Both host Playwright tests pass and real desktop
-and mobile screenshots are available. The small-dataset evaluation completed all
-12 deterministic workloads with 10 validated candidates and no accepted changes.
-The latest [acceptance reports](experiments/reports/acceptance/evaluation.md) reproduce
-12 completed deterministic evaluations with no accepted changes. Model evaluation,
-dependency audits and remote CI remain pending. The GitHub remote is configured; current
-remote contents cannot be verified because GitHub DNS is unavailable in this session.
+**SQL rewrites and index experiments, validated against real PostgreSQL execution.**
 
-## Implemented code
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](pyproject.toml)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](docker-compose.yml)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](apps/web/package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](apps/web/tsconfig.json)
+[![LangGraph](https://img.shields.io/badge/Workflow-LangGraph-1C3C3C)](packages/optimizer/workflow.py)
+[![License: MIT](https://img.shields.io/badge/License-MIT-14B8A6)](LICENSE)
 
-- Positive SELECT syntax, schema, relation and function policy independent of models.
-- JSON plan extraction and contextual diagnostics for scans, joins, estimates and spills.
-- Exact typed bag comparison with duplicate, NULL and ordering checks on finite snapshots.
-- Repeated randomized paired trials, bootstrap intervals and explicit acceptance gates.
-- Structured index experiments with storage limits and protected workload checks.
-- Deterministic SQLGlot simplification and filter-index proposals.
-- Optional OpenAI-compatible typed proposals and deterministic fallback.
-- LangGraph workflow, persistent checkpoints, PostgreSQL jobs and cooperative cancellation.
-- Versioned FastAPI endpoints and a Next.js SQL workspace with plans and evidence.
-- Deterministic commerce generator and 12 workload definitions.
-- Evaluation CLI, structured logs, Prometheus metrics, OpenTelemetry and CI definitions.
+[Quick start](#quick-start) · [Architecture](#architecture) · [Benchmarks](#benchmarks) · [API](#api) · [Documentation](#documentation)
+
+</div>
+
+PostgreSQL Query Optimizer is a full-stack performance engineering workbench. It inspects execution plans, proposes SQL rewrites and indexes, checks result correctness, and runs repeated database experiments before recommending a change. A Next.js workspace exposes the SQL, plans, trial measurements, and decision behind each experiment.
+
+PostgreSQL continues to choose execution plans. This application explores changes to the SQL and physical indexes available to that planner. Proposals come from deterministic rules or an optional OpenAI-compatible model; acceptance is controlled by code and measured results.
+
+## Capabilities
+
+| Capability | Implementation |
+|---|---|
+| **Plan diagnostics** | Parses `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` for scans, joins, row-estimate errors, sorts, and spills. |
+| **SQL and index proposals** | SQLGlot expression simplification, predicate-based B-tree proposals, and optional typed model proposals. |
+| **Correctness checks** | Exact result comparisons across commerce, edge-case, and empty datasets; preserves types, column metadata, duplicates, NULLs, and supported ordering contracts. |
+| **Measured acceptance** | Randomized paired trials, bootstrap confidence intervals, variance limits, index storage limits, and protected workload checks. |
+| **Durable execution** | PostgreSQL job queue, LangGraph checkpoints, interrupted-worker recovery, cooperative cancellation, and experimental index cleanup. |
+| **Inspectable results** | Hierarchical plans, baseline/candidate charts, per-trial measurements, rejection reasons, and downloadable JSON reports. |
+| **Observability** | Structured stage events, Prometheus metrics, and OpenTelemetry spans. |
+
+[Desktop workspace](docs/assets/workspace-desktop.png) · [Mobile workspace](docs/assets/workspace-mobile.png)
+
+<details>
+<summary>View the application: SQL workspace, execution plans, and benchmark evidence</summary>
+
+![PostgreSQL Query Optimizer workspace with a completed index experiment, execution plans, paired trial chart, and acceptance decision](docs/assets/workspace-desktop.png)
+
+</details>
 
 ## Architecture
 
+The application database stores jobs, events, and reports. A separate benchmark database contains the disposable commerce dataset. A single worker serializes experiments so concurrent index changes cannot contaminate measurements.
+
 ```mermaid
 flowchart TD
-  UI[Next.js SQL workspace] --> API[FastAPI]
-  API --> Jobs[PostgreSQL durable session queue]
-  Jobs --> Graph[LangGraph worker]
-  Graph --> Validation[Deterministic SQL and correctness gates]
-  Graph --> Provider[Deterministic or optional model proposals]
-  Validation --> Benchmark[Isolated PostgreSQL benchmarks]
-  Benchmark --> Policy[Statistical acceptance policy]
-  Policy --> Jobs
-  Graph --> Checkpoints[Persistent local checkpoints]
+    Browser["Next.js workspace"] --> API["FastAPI · versioned REST API"]
+    API --> AppDB[("PostgreSQL · jobs and reports")]
+    AppDB --> Worker["LangGraph worker"]
+    Worker --> Checkpoints[("SQLite · durable checkpoints")]
+    Worker --> Providers["Deterministic rules / optional model"]
+    Providers --> Gates["SQL policy and correctness checks"]
+    Worker --> Gates
+    Gates --> BenchDB[("Isolated PostgreSQL · benchmark data")]
+    BenchDB --> Evidence["Paired trials and acceptance policy"]
+    Evidence --> AppDB
+    API --> Browser
+    classDef app fill:#172554,stroke:#60a5fa,color:#eff6ff
+    classDef data fill:#134e4a,stroke:#2dd4bf,color:#f0fdfa
+    classDef engine fill:#312e81,stroke:#a5b4fc,color:#eef2ff
+    class Browser,API app
+    class AppDB,Checkpoints,BenchDB data
+    class Worker,Providers,Gates,Evidence engine
 ```
 
-Python 3.12, Pydantic v2, SQLGlot, Psycopg 3, SQLAlchemy and Alembic serve the backend.
-Next.js App Router, strict TypeScript, Tailwind, shadcn-style component primitives,
-TanStack Query and Recharts serve the frontend. PostgreSQL 16 is the configured
-database target. Docker Compose supplies local isolation.
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js App Router, React, strict TypeScript, Tailwind CSS, TanStack Query, Recharts |
+| API and persistence | FastAPI, Pydantic v2, SQLAlchemy, Alembic, PostgreSQL |
+| Optimization engine | Python 3.12, SQLGlot, Psycopg 3, LangGraph, SQLite checkpoints |
+| Runtime and telemetry | Docker Compose, Prometheus, OpenTelemetry, optional Jaeger |
+| Quality checks | Pytest, Ruff, strict Mypy, ESLint, TypeScript, Playwright, GitHub Actions |
 
-## Prerequisites and setup
+### From proposal to recommendation
 
-Conda, Docker with Compose, Node 22 and package-registry network access are required.
-The full-stack setup below has supplied host build and startup evidence.
+```mermaid
+flowchart TD
+    Input["Submitted SELECT"] --> Validate["Validate SQL and inspect baseline plan"]
+    Validate --> Propose["Generate bounded candidates"]
+    Propose --> Correct{"Exact finite results match?"}
+    Correct -->|No or inconclusive| Reject["Record rejection and reason"]
+    Correct -->|Yes| Measure["Run randomized paired trials"]
+    Measure --> Policy{"All acceptance gates pass?"}
+    Policy -->|No| Reject
+    Policy -->|Yes| Accept["Eligible recommendation"]
+    Accept --> Report["Select best accepted candidate and export evidence"]
+    Reject --> Report
+    classDef pass fill:#134e4a,stroke:#2dd4bf,color:#f0fdfa
+    classDef gate fill:#312e81,stroke:#a5b4fc,color:#eef2ff
+    classDef reject fill:#450a0a,stroke:#f87171,color:#fef2f2
+    class Correct,Policy gate
+    class Accept,Report pass
+    class Reject reject
+```
+
+Each session evaluates up to eight candidates in one proposal round. The original SQL remains the recommendation when no candidate passes. Experimental indexes are removed after measurement; recommendations are not automatically applied to an external database.
+
+## Benchmarks
+
+The latest recorded [acceptance evaluation](experiments/reports/acceptance/evaluation.json) covers **12 workloads, 10 validated candidates, and zero accepted changes**. All deterministic sessions completed. All 12 model-assisted arms were unexecuted because no model credential was configured.
+
+**Conditions:** PostgreSQL 16.16 on Linux; seed 42; 10,000 orders and 30,000 order items; warm cache; two warmup pairs and ten measured pairs per candidate. Index experiments additionally measured all 12 protected workloads with five pairs each. The Compose benchmark service is configured with two CPUs, 2 GiB memory, 256 MiB shared buffers, and 16 MiB `work_mem`.
+
+| Workload | Original median, ms | Candidates | Best measured paired speedup | Accepted changes |
+|---|---:|---:|---:|---:|
+| `customer_lookup` | 0.2265 | 1 | 16.319× | 0 |
+| `sales_window` | 0.6205 | 2 | 1.554× | 0 |
+| `regional_revenue` | 16.0615 | 1 | 1.003× | 0 |
+| `top_products` | 3.6040 | 0 | — | 0 |
+| `purchase_history` | 2.9185 | 2 | 1.108× | 0 |
+| `inventory` | 2.6350 | 0 | — | 0 |
+| `suppliers` | 11.4160 | 0 | — | 0 |
+| `shipment_delays` | 1.6695 | 0 | — | 0 |
+| `correlated` | 293.8425 | 1 | 0.996× | 0 |
+| `skew_join` | 3.7345 | 2 | 1.107× | 0 |
+| `pagination` | 1.3735 | 1 | 19.841× | 0 |
+| `analytics` | 1.1850 | 0 | — | 0 |
+
+Original medians come from the evaluator's initial baseline. Speedups are medians of paired baseline/candidate ratios from separate candidate experiments; they cannot be reconstructed from the original-median column. A dash means no candidate was generated.
+
+### Why a faster query can still be rejected
+
+For `customer_lookup`, the proposed index on `orders(customer_id, ordered_at, id)` reduced the paired baseline median from **0.2325 ms to 0.0140 ms**. The median paired speedup was **16.319×**, with a **95% bootstrap interval of 15.286–18.917×**. The candidate passed finite correctness checks but failed the protected workload gate, so the original query was retained.
+
+The pagination index similarly measured **19.841×** on its target query and failed the protected workload gate. Neither result is an accepted performance improvement. Across the ten candidates, seven failed the improvement/confidence gate and four failed the protected workload gate; one failed both.
+
+### Default acceptance policy
+
+| Gate | Requirement |
+|---|---|
+| SQL policy | One permitted SELECT; allowlisted syntax, relations, and functions |
+| Correctness | Exact finite comparisons pass on all three datasets |
+| Latency | At least 10% median paired latency reduction, expressed as speedup ≥ `1 / 0.9` |
+| Confidence | Lower bound of the 95% paired bootstrap speedup interval exceeds `1.0` |
+| Stability | Baseline and candidate coefficients of variation ≤ `0.35` |
+| Index storage | Experimental index size ≤ 64 MiB |
+| Workload protection | For index changes, every protected workload has a lower speedup bound ≥ `0.9` |
+
+Confidence intervals use 2,000 bootstrap resamples. p95 is omitted below 40 observations. These are small-sample, local warm-cache measurements; protected-gate failures can reflect uncertainty as well as slower execution. Index build time and correctness reads are excluded from query execution latency. Write throughput, model benefit, and medium/large dataset performance have not been measured.
+
+[Raw trials, plans, and rejection reasons](experiments/reports/acceptance/evaluation.json) · [Aggregate metrics](experiments/reports/acceptance/summary.json) · [Methodology](docs/benchmarking.md)
+
+## Quick start
+
+**Requirement:** Docker with Compose. Node and Python installations are only needed for host-side development.
 
 ```sh
-conda activate postgres-query-optimizer
-python --version
-python -m pip --version
-python -c 'import sys; print(sys.executable)'
 cp .env.example .env
-docker compose up --build -d
+docker compose up --build -d --wait
 ```
 
-Open http://localhost:3000 and http://localhost:8000/docs. Compose runs Alembic
-migrations and seeds 10,000 orders before starting the API and worker. Paid model
-access is optional. Local mode defaults to deterministic proposals.
+Compose creates both PostgreSQL databases, applies migrations, seeds the small dataset, and starts the API, worker, and frontend. Deterministic mode requires no model credentials.
 
-For a host frontend development session:
+| Service | Address |
+|---|---|
+| SQL workspace | [localhost:3000](http://localhost:3000) |
+| Interactive API documentation | [localhost:8000/docs](http://localhost:8000/docs) |
+| Readiness | [localhost:8000/api/v1/readiness](http://localhost:8000/api/v1/readiness) |
+| Application PostgreSQL | `localhost:5433` |
+| Benchmark PostgreSQL | `localhost:5434` |
+
+Select a workload, choose the deterministic provider, and run an optimization. The completed session displays the recommendation, correctness results, plans, and benchmark evidence.
+
+### Optional model proposals
+
+Set `PGO_OPENAI_API_KEY` in `.env`, optionally set `PGO_MODEL` (default: `gpt-4.1-mini`), then recreate the backend services:
 
 ```sh
-cd apps/web
-npm ci
-npm run dev
+docker compose up -d --force-recreate api worker
 ```
 
-`apps/web/package-lock.json` records the installed npm resolution; CI and frontend
-containers use `npm ci`. `requirements.lock` and `requirements-dev.lock` pin the
-installed Python runtime/build and development dependency closures. Regenerate
-Python snapshots with `python scripts/lock_dependencies.py` after an authorized
-installation and successful `pip check`. These snapshots were generated on macOS
-arm64. Supplied Linux container builds consumed the locks successfully; a fresh
-uncached installation and dependency audits remain unverified. Never install
-Python dependencies globally.
+Select `openai` in the workspace. Model output is parsed into typed proposals and passes through the same deterministic checks. Invalid or unavailable model output can fall back to deterministic candidates; evaluation reports distinguish fallback-only runs from model contributions. Model calls may incur provider charges.
 
-Install into the existing selected environment only:
+### Reproduce the evaluation
+
+With the worker running:
 
 ```sh
-python -m pip install --no-user -r requirements-dev.lock
-python -m pip install --no-user --no-build-isolation --no-deps -e .
-python -m pip check
+docker compose exec -e PGO_OPENAI_API_KEY= api \
+  pg-optimizer evaluate --output /app/experiments/reports/latest
+docker compose cp api:/app/experiments/reports/latest experiments/reports/latest
 ```
 
-## Dataset generation
+This command runs the deterministic arm without model calls and produces `evaluation.json`, `summary.json`, and `evaluation.md`. Add `--workloads customer_lookup pagination` to evaluate selected workloads.
+
+The generator supports 10,000, 100,000, or 1,000,000 orders, each with three order items. To switch to the medium dataset:
 
 ```sh
 docker compose stop worker
@@ -105,130 +193,83 @@ docker compose run --rm seed pg-optimizer seed --size medium --seed 42
 docker compose start worker
 ```
 
-Sizes are 10,000, 100,000 and 1,000,000 orders, each with three order items. Stable
-hash fractions create skewed customer activity and product popularity. Edge schemas
-include NULLs, duplicate foreign keys, missing relationships and empty tables.
-Workloads include lookups, revenue aggregation, inventory, supplier analysis,
-shipment delays, correlated subqueries, skewed joins and stable pagination.
+Generation replaces benchmark data; existing reports retain the environment and dataset recorded at execution time.
 
-## Optimization workflow
+## API
 
-Select a workload in the workspace, choose a provider and submit the SQL. The API
-creates a persistent session. The worker validates the query, inspects metadata,
-measures a plan, proposes candidates, compares finite results and benchmarks valid
-candidates. Rejected candidates retain failure reasons. The original SQL remains
-the recommendation when no candidate satisfies the configured policy.
+Submit a query:
 
 ```sh
-curl http://localhost:8000/api/v1/optimizations \
+curl -X POST http://localhost:8000/api/v1/optimizations \
   -H 'Content-Type: application/json' \
-  -d '{"sql":"SELECT id FROM commerce.orders WHERE customer_id=731","provider":"deterministic"}'
+  -d '{"sql":"SELECT id FROM commerce.orders WHERE customer_id = 731","provider":"deterministic"}'
 ```
 
-The response contains a session ID. Retrieve status at
-`/api/v1/optimizations/{id}` and JSON evidence at `/api/v1/optimizations/{id}/report`.
-The frontend exports reports and displays hierarchical plans and trial measurements.
+The API returns HTTP `202` with a session identifier. Substitute that identifier for `{id}` below.
 
-## Benchmark policy and results
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/workloads` | List predefined workloads |
+| `POST` | `/api/v1/optimizations` | Queue an experiment |
+| `GET` | `/api/v1/optimizations/{id}` | Retrieve status and session details |
+| `GET` | `/api/v1/optimizations/{id}/report` | Retrieve the JSON experiment report |
+| `POST` | `/api/v1/optimizations/{id}/cancel` | Request cooperative cancellation |
+| `GET` | `/metrics` | Export API Prometheus metrics |
 
-Two warmup pairs precede ten measured randomized pairs by default. Reports include
-server latency, planning time, root buffers, variance, index size and plan changes.
-A paired bootstrap estimates a median speedup interval. p95 is omitted below 40
-observations. Acceptance requires finite correctness validation, a default 10
-percent latency reduction, lower speedup bound above one and bounded variance.
-Index experiments additionally check all protected workloads.
+Reports include original and recommended SQL, index proposals, diagnostics, environment metadata, candidate validation, paired measurements, acceptance policy, and model usage.
 
-The browser session completed a real index experiment and retained the original
-query because the protected workload regression gate failed. The [small-dataset evaluation](experiments/reports/host-small/analysis.md) records
-12 completed deterministic sessions, 10 validated candidates and no accepted
-recommendations. Model arms were not run because no credential was configured. Statistical unit fixtures are not benchmark evidence. See
-[benchmark methodology](docs/benchmarking.md) and [verification](docs/verification.md).
+## Development and tests
+
+Host development uses Python 3.12 in the dedicated Conda environment and Node 22. Python and npm dependencies are pinned in lockfiles.
 
 ```sh
-docker compose exec api pg-optimizer evaluate --workloads customer_lookup --output /app/experiments/reports/lookup
-docker compose cp api:/app/experiments/reports/lookup experiments/reports/lookup
-```
-
-## Tests
-
-Commands inside the dedicated activated Conda environment:
-
-```sh
+conda env create -f environment.yml
+conda activate postgres-query-optimizer
+cd apps/web
+npm ci
+npx playwright install chromium
+cd ../..
 python scripts/verify_local.py
 ```
 
-This runs the complete local Python and frontend checks, including the production
-build, and writes `experiments/reports/local-verification.json`. Individual checks:
+`verify_local.py` runs dependency consistency, Python tests, Ruff lint/format checks, strict Mypy, frontend lint/types/unit tests, the production build, and Compose configuration validation.
+
+With Docker running and frontend browser dependencies installed, execute the stack acceptance suite:
 
 ```sh
-python -m unittest discover -s tests/unit -v
-python -m pytest tests/unit tests/integration/test_agent.py
-python -m ruff check packages tests
-python -m ruff format --check packages tests
-python -m mypy packages/optimizer
+sh scripts/verify_stack.sh
 ```
 
-Real database integration requires running Compose services and host DSNs:
+The stack suite builds the images, runs PostgreSQL integration and browser tests, verifies worker process recovery and cancellation, and evaluates the 12 deterministic workloads. The queue must be drained before the process recovery tests. Results are saved under `experiments/reports/acceptance`.
 
-```sh
-PGO_INTEGRATION=1 \
-PGO_APP_DSN=postgresql+psycopg://pgo_app:local_app_only@localhost:5433/pgo_app \
-PGO_READ_DSN=postgresql://pgo_reader:local_reader_only@localhost:5434/pgo_benchmark \
-PGO_ADMIN_DSN=postgresql://pgo_experiment:local_experiment_only@localhost:5434/pgo_benchmark \
-  python -m pytest tests/integration -v
-cd apps/web
-npm run lint
-npm run typecheck
-npm run build
-npm run test:e2e
-```
+GitHub Actions defines separate [quality/integration](.github/workflows/ci.yml) and [manually dispatched evaluation](.github/workflows/evaluate.yml) workflows.
 
-Playwright captured a real completed session. The [desktop capture](docs/assets/workspace-desktop.png)
-and [mobile capture](docs/assets/workspace-mobile.png) show actual plans, trials
-and the rejection decision. Screenshot review identified rendering defects.
-Refreshed captures were inspected at desktop width 1280 and mobile width 390.
-Charts are visible and the mobile document no longer expands beyond the viewport.
-CI definitions require the same checks and do not require paid APIs.
-CI has not run and is not claimed to pass.
+## Scope
 
-## Repository layout
+The implemented workflow targets a controlled local commerce database. SQL execution uses a read-only role, repeatable-read snapshots, query timeouts, estimated-cost limits, and bounded result collection. A separate experiment role creates structured experimental indexes under an advisory lock. Compose binds exposed services to loopback.
 
-| Path | Contents |
+Finite comparisons validate sampled database states rather than proving arbitrary SQL equivalence. Execution uses one worker and one proposal round. Cancellation takes effect between stages or trials, after an active statement finishes or times out. Production deployment requires deployment-specific authentication, TLS, secret management, and isolation; the included passwords are local development defaults.
+
+## Repository map
+
+| Path | Responsibility |
 |---|---|
-| `packages/optimizer` | SQL policy, plans, benchmarks, providers, graph, API and worker |
-| `apps/web` | Next.js workspace, plans, charts and browser tests |
-| `datasets/schema.sql` | Commerce schema |
-| `infrastructure` | Database roles, Docker, migrations and metrics configuration |
-| `tests` | Unit, provider and real PostgreSQL integration tests |
-| `experiments/reports` | Verification record and future measured evaluation outputs |
-| `docs` | Architecture, safety, methodology, deployment and decisions |
+| [`packages/optimizer`](packages/optimizer) | SQL policy, plan analysis, providers, correctness, statistics, workflow, API, and worker |
+| [`apps/web`](apps/web) | SQL workspace, plan viewer, benchmark charts, API proxy, and browser tests |
+| [`datasets`](datasets) | Commerce schema and edge-case fixtures |
+| [`infrastructure`](infrastructure) | Database roles, migrations, containers, and metrics configuration |
+| [`tests`](tests) | Unit tests, provider contracts, PostgreSQL integration, and worker recovery |
+| [`experiments/reports`](experiments/reports) | Recorded evaluations, aggregate metrics, and verification evidence |
+| [`scripts`](scripts) | Local checks, stack acceptance, dependency locks, and publication |
 
-## Limitations and remaining work
+## Documentation
 
-The system is not production-ready. Local static checks and a webpack production
-build pass. HTTP safety and SQLite checkpoint recovery are tested with database
-doubles. Both real process recovery tests passed in the supplied host run and
-are included in CI. Docker socket access is denied and GitHub DNS is unavailable
-in the execution session. The configured remote is
-https://github.com/surtecha/postgres-query-optimizer.git. Local commits are stored
-through `scripts/git.sh` because this host disallows writing `.git`.
+- [Architecture and recovery](docs/architecture.md)
+- [Agent workflow](docs/agent-workflow.md)
+- [Benchmark methodology](docs/benchmarking.md)
+- [Evaluation metrics and provider accounting](docs/evaluation.md)
+- [Security boundaries](docs/security.md)
+- [Deployment and observability](docs/deployment.md)
+- [Architecture decisions](docs/decisions)
 
-Finite comparisons cannot prove arbitrary SQL equivalence. Unsupported functions
-and syntax fail closed. Result-size limits can make correctness inconclusive.
-Cancellation waits for the active statement timeout. One worker and one proposal
-round are implemented. Write throughput, HypoPG, formal proofs, distributed workers,
-adaptive model follow-up and aggregate AI-value evaluation remain future work.
-
-Run `sh scripts/verify_stack.sh` on a host with Docker access and installed
-Playwright Chromium. It builds the development images, runs PostgreSQL and browser
-checks, stops the worker for process recovery/cancellation tests, restores the
-worker, and evaluates all 12 deterministic workloads without paid model calls.
-It preserves project volumes and saves results in `experiments/reports/acceptance`.
-The process tests require a drained queue. The supplied host run passed all stack
-checks and completed all deterministic evaluations. Direct execution remains blocked
-by Docker permissions in this session.
-
-Before a release, complete those checks, dependency audits and remote CI. Publish
-with `sh scripts/publish.sh` after GitHub authentication and network access are
-available. The script reuses the configured remote, refuses a dirty worktree or a
-branch other than main, and verifies the pushed commit without force.
+Licensed under the [MIT License](LICENSE).
