@@ -5,8 +5,10 @@ candidate acceptance. PostgreSQL selects execution plans. This project explores
 SQL formulations and physical indexes beyond a fixed query and schema.
 
 **Execution status:** implementation is incomplete and has not passed end-to-end
-acceptance. Forty-seven unit tests pass locally. Docker, PostgreSQL, full Python
-dependencies, frontend dependencies and GitHub publication could not be verified.
+acceptance. In the selected Python 3.12.16 environment, 35 unit tests pass, but
+full discovery fails because SQLGlot is missing. The earlier 47-test result belongs
+to the previous environment. Docker, PostgreSQL, full dependencies, frontend
+checks and GitHub publication remain unverified.
 No measured speedups or working-application screenshots are claimed.
 
 ## Implemented code
@@ -49,7 +51,6 @@ Conda, Docker with Compose, Node 22 and package-registry network access are requ
 The following full-stack setup is provided but remains unverified in this environment.
 
 ```sh
-conda env create -f environment.yml
 conda activate postgres-query-optimizer
 python --version
 python -m pip --version
