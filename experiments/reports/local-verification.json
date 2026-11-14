@@ -1,32 +1,46 @@
 {
-  "timestamp": "2026-11-14T10:28:00.645849+00:00",
+  "timestamp": "2026-11-14T12:00:28.354452+00:00",
   "python": "3.12.16",
   "interpreter": "/Users/surtecha/Tools/miniconda/envs/postgres-query-optimizer/bin/python",
-  "unit_tests": {
-    "runner": "unittest; pytest-style functions are not included",
-    "status": "passed",
-    "executed": 52,
-    "passed": 52,
-    "failures": 0,
-    "errors": 0,
-    "skipped": 0,
-    "discovery_errors": 0
-  },
-  "python_syntax": "passed",
-  "tools": {
-    "docker": true,
-    "gh": true,
-    "psql": false,
-    "node": true,
-    "npm": true
+  "checks": {
+    "dependencies": {
+      "status": "passed"
+    },
+    "python_tests": {
+      "status": "passed",
+      "tests": 87,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "python_lint": {
+      "status": "passed"
+    },
+    "python_format": {
+      "status": "passed"
+    },
+    "python_types": {
+      "status": "passed"
+    },
+    "web_lint": {
+      "status": "passed"
+    },
+    "web_types": {
+      "status": "passed"
+    },
+    "web_unit": {
+      "status": "passed"
+    },
+    "web_build": {
+      "status": "passed"
+    },
+    "compose_config": {
+      "status": "passed"
+    }
   },
   "integration": "not_run",
-  "frontend_build": "not_run",
+  "worker_process_recovery": "not_run",
   "browser_tests": "not_run",
-  "lint": "not_run",
-  "typecheck": "not_run",
   "benchmarks": "not_run",
-  "missing_check_modules": [],
-  "network": "not_checked_by_this_script",
   "github_publication": "not_checked_by_this_script"
 }

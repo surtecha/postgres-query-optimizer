@@ -16,8 +16,8 @@ jobs:
         shell: bash -el {0}
         run: |
           python --version
-          python -m ruff check packages tests
-          python -m ruff format --check packages tests
+          python -m ruff check packages tests scripts
+          python -m ruff format --check packages tests scripts
           python -m mypy packages/optimizer
           python -m pytest tests/unit tests/integration/test_agent.py -v
       - name: Dependency audit
@@ -65,6 +65,10 @@ jobs:
           npm ci --no-fund
           npx playwright install --with-deps chromium
           npm run test:e2e
+      - name: Worker process recovery and cancellation
+        run: |
+          docker compose stop worker
+          docker compose exec -T -e PGO_INTEGRATION=1 -e PGO_RECOVERY=1 api python -m pytest /app/tests/integration/test_recovery.py -v
       - name: Preserve service diagnostics and real screenshots
         if: always()
         run: docker compose logs > compose-test.log

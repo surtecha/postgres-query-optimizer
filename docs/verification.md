@@ -1,5 +1,47 @@
 # Execution evidence
 
+## Current acceptance status
+
+This section supersedes the historical status statements below. On 14 November
+2026, `python scripts/verify_local.py` passed all ten local checks using the
+selected Python 3.12.16 environment: dependency consistency, 87 Python tests,
+Ruff lint/format, strict Mypy, frontend lint/types, six frontend unit tests,
+production build and Compose configuration. A separate full Pytest discovery
+reported 87 passed and 10 skipped, including eight database tests and two new
+process recovery tests. No database test was converted to a local success.
+
+The verification script now runs pytest rather than the incomplete unittest
+subset and saves JUnit-derived test counts. Its report explicitly excludes
+integration, browser, benchmark and publication results.
+
+Existing supplied host evidence includes successful Linux image builds, stack
+startup, 12 integration checks, two browser checks, refreshed inspected captures
+and all 12 deterministic small-dataset evaluations. Ten candidates were validated;
+none was accepted. Model evaluation remains not_run.
+
+Two new process tests kill an actual worker after a committed experimental index
+and durable validation checkpoint, then verify restart, queue attempt counts,
+checkpoint reuse, cancellation and stale index removal. CI stops the normal worker
+before these tests. They remain unexecuted because Docker socket access is denied
+in this session. `sh scripts/verify_stack.sh` runs all stack checks and deterministic
+evaluation on an accessible host, preserving volumes and reports. It requires a
+drained queue and installed frontend browser dependencies. The local command attempt
+failed before builds when Docker could not update its builder activity metadata
+under the host Docker directory. No stack checks ran.
+
+The configured GitHub remote is
+https://github.com/surtecha/postgres-query-optimizer.git. Local origin/main tracking
+exists at `fffb0f6`; live remote verification fails because GitHub DNS is unavailable.
+Publication now reuses origin instead of trying to create another repository.
+Four regression tests verify existing-remote success, dirty worktree rejection,
+branch rejection and remote commit mismatch. No fresh push or CI result is claimed.
+
+Release acceptance remains incomplete until real process tests, dependency audits,
+current-commit stack checks and remote CI pass. Earlier missing-dependency,
+missing-screenshot and absent-remote statements below describe past stages only.
+
+## Historical verification record
+
 Local verification was performed on 14 November 2026 with Python 3.12.15 inside a
 workspace-local Conda environment named `pg-optimizer-ai`. Cached Python artifacts
 were used because network DNS and default Conda directories were unavailable.

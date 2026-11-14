@@ -4,8 +4,8 @@ Controlled SQL and index experiments with deterministic safety gates and measure
 candidate acceptance. PostgreSQL selects execution plans. This project explores
 SQL formulations and physical indexes beyond a fixed query and schema.
 
-**Execution status:** incomplete end-to-end acceptance. In the selected Python
-3.12.16 environment, 83 tests pass and 8 PostgreSQL tests are skipped. Ruff,
+**Execution status:** incomplete release acceptance. In the selected Python
+3.12.16 environment, 87 tests pass and 10 PostgreSQL/process tests are skipped. Ruff,
 formatting, strict Mypy, ESLint and strict TypeScript checks pass. The frontend
 production build uses webpack and passes with the current Node 26 runtime.
 The configured Node 22 build passed during the preceding verification. This
@@ -14,7 +14,8 @@ application image builds, successful stack startup, and 12 integration tests
 passing against PostgreSQL 16. Both host Playwright tests pass and real desktop
 and mobile screenshots are available. The small-dataset evaluation completed all
 12 deterministic workloads with 10 validated candidates and no accepted changes.
-Model evaluation, GitHub publication and CI remain pending.
+Model evaluation and CI remain pending. The GitHub remote is configured; current
+remote contents cannot be verified because GitHub DNS is unavailable in this session.
 
 ## Implemented code
 
@@ -53,7 +54,7 @@ database target. Docker Compose supplies local isolation.
 ## Prerequisites and setup
 
 Conda, Docker with Compose, Node 22 and package-registry network access are required.
-The following full-stack setup is provided but remains unverified in this environment.
+The full-stack setup below has supplied host build and startup evidence.
 
 ```sh
 conda activate postgres-query-optimizer
@@ -81,8 +82,9 @@ containers use `npm ci`. `requirements.lock` and `requirements-dev.lock` pin the
 installed Python runtime/build and development dependency closures. Regenerate
 Python snapshots with `python scripts/lock_dependencies.py` after an authorized
 installation and successful `pip check`. These snapshots were generated on macOS
-arm64; clean installation and Linux compatibility remain unverified. They are not
-a verified reproducible release. Never install Python dependencies globally.
+arm64. Supplied Linux container builds consumed the locks successfully; a fresh
+uncached installation and dependency audits remain unverified. Never install
+Python dependencies globally.
 
 Install into the existing selected environment only:
 
@@ -149,6 +151,13 @@ docker compose cp api:/app/experiments/reports/lookup experiments/reports/lookup
 Commands inside the dedicated activated Conda environment:
 
 ```sh
+python scripts/verify_local.py
+```
+
+This runs the complete local Python and frontend checks, including the production
+build, and writes `experiments/reports/local-verification.json`. Individual checks:
+
+```sh
 python -m unittest discover -s tests/unit -v
 python -m pytest tests/unit tests/integration/test_agent.py
 python -m ruff check packages tests
@@ -195,10 +204,11 @@ CI has not run and is not claimed to pass.
 
 The system is not production-ready. Local static checks and a webpack production
 build pass. HTTP safety and SQLite checkpoint recovery are tested with database
-doubles; real PostgreSQL worker recovery remains unverified. Docker socket and
-network access from the execution session are required to finish database,
-browser and benchmark acceptance. No GitHub repository has been created. Local commits are stored through `scripts/git.sh` because this
-host disallows writing `.git`.
+doubles. Two real process recovery tests are implemented and included in CI, but
+remain unexecuted. Docker socket access is denied and GitHub DNS is unavailable
+in the execution session. The configured remote is
+https://github.com/surtecha/postgres-query-optimizer.git. Local commits are stored
+through `scripts/git.sh` because this host disallows writing `.git`.
 
 Finite comparisons cannot prove arbitrary SQL equivalence. Unsupported functions
 and syntax fail closed. Result-size limits can make correctness inconclusive.
@@ -206,8 +216,15 @@ Cancellation waits for the active statement timeout. One worker and one proposal
 round are implemented. Write throughput, HypoPG, formal proofs, distributed workers,
 adaptive model follow-up and aggregate AI-value evaluation remain future work.
 
-Before a release, verify clean installation from the dependency locks, run the
-remaining database and browser checks, fix runtime failures, execute measured
-evaluation and capture actual screenshots. Publish with
-`scripts/publish.sh` after GitHub CLI authentication and network access are available.
-That script refuses a dirty worktree and verifies the pushed commit without force.
+Run `sh scripts/verify_stack.sh` on a host with Docker access and installed
+Playwright Chromium. It builds the development images, runs PostgreSQL and browser
+checks, stops the worker for process recovery/cancellation tests, restores the
+worker, and evaluates all 12 deterministic workloads without paid model calls.
+It preserves project volumes and saves results in `experiments/reports/acceptance`.
+The process tests require a drained queue. The local attempt stopped before builds
+because Docker builder metadata is not writable in this session.
+
+Before a release, complete those checks, dependency audits and remote CI. Publish
+with `sh scripts/publish.sh` after GitHub authentication and network access are
+available. The script reuses the configured remote, refuses a dirty worktree or a
+branch other than main, and verifies the pushed commit without force.
