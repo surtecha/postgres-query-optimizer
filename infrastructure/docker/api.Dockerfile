@@ -1,10 +1,12 @@
 FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 LANGGRAPH_STRICT_MSGPACK=true
-COPY pyproject.toml ./
+COPY pyproject.toml requirements.lock requirements-dev.lock ./
 COPY packages ./packages
 ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = true ]; then python -m pip install --no-cache-dir ".[dev]"; else python -m pip install --no-cache-dir .; fi
+RUN if [ "$INSTALL_DEV" = true ]; then lock=requirements-dev.lock; else lock=requirements.lock; fi \
+    && python -m pip install --no-user --no-cache-dir -r "$lock" \
+    && python -m pip install --no-user --no-cache-dir --no-build-isolation --no-deps .
 RUN useradd --create-home --uid 10001 optimizer
 COPY datasets ./datasets
 COPY infrastructure/migrations ./infrastructure/migrations
