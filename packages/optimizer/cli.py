@@ -9,6 +9,7 @@ from optimizer.database import Database
 from optimizer.dataset import generate
 from optimizer.persistence import Store
 from optimizer.statistics import summary
+from optimizer.evaluation_metrics import aggregate
 from optimizer.workloads import WORKLOADS
 
 
@@ -49,6 +50,7 @@ def evaluate(settings: Settings, output: Path, identifiers: list[str]) -> None:
                 (output / "evaluation.json").write_text(json.dumps(results, indent=2, default=str))
         output.mkdir(parents=True, exist_ok=True)
         (output / "evaluation.json").write_text(json.dumps(results, indent=2, default=str))
+        (output / "summary.json").write_text(json.dumps(aggregate(results), indent=2, default=str))
         lines = ["# Evaluation", "", "Real measurements only. Missing provider runs remain not_run.", "",
                  "| Workload | Provider | Status | Best paired speedup |", "|---|---|---|---|"]
         for item in results:

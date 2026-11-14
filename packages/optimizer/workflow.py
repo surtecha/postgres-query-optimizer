@@ -126,6 +126,7 @@ class Workflow:
         result: dict[str, Any] = {"id": identifier, **candidate.model_dump(), "accepted": False}
         try:
             validate(candidate.sql)
+            result["safety"] = {"passed": True}
             if candidate.index:
                 self.db.index_ddl(self.admin, candidate.index, "pgo_exp_"+identifier)
             with self.db.reader() as conn:
@@ -143,6 +144,10 @@ class Workflow:
                 result["rejection_reasons"] = [result["validation"]["reason"]]
         except (Cancelled, BudgetExceeded):
             raise
+        except UnsafeSQL as exc:
+            result["safety"] = {"passed": False, "reason": str(exc)}
+            result["validation"] = {"status": "statically_rejected", "reason": str(exc)}
+            result["rejection_reasons"] = [str(exc)]
         except Exception as exc:
             # Preserve failure category without leaking SQL connection strings or credentials.
             result["error"] = type(exc).__name__
