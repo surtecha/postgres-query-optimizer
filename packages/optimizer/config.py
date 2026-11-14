@@ -17,10 +17,13 @@ class Settings(BaseSettings):
         "postgresql://pgo_experiment:local_experiment_only@localhost:5434/pgo_benchmark"
     )
     state_dir: Path = Path("state")
-    provider: Literal["deterministic", "openai"] = "deterministic"
+    provider: Literal["deterministic", "openai", "ollama"] = "deterministic"
     model: str = "gpt-4.1-mini"
     openai_api_key: SecretStr = SecretStr("")
     openai_base_url: str = "https://api.openai.com/v1"
+    ollama_base_url: str = "http://localhost:11434/v1"
+    ollama_model: str = "qwen2.5-coder:3b"
+    model_timeout_seconds: int = Field(default=90, ge=1, le=120)
     api_token: SecretStr = SecretStr("")
     deployment: Literal["local", "remote"] = "local"
     max_candidates: int = Field(default=8, ge=1, le=8)

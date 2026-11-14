@@ -127,3 +127,62 @@ def test_valid_model_run_reports_model_candidate_contribution():
     assert result["model_candidates"] == 1
     assert result["accepted_model_candidates"] == 1
     assert result["workloads_improved_rate"] == 1
+
+
+def test_ollama_model_success_and_failure_are_attributed_separately():
+    rows = [
+        {
+            "provider": "ollama",
+            "session": {
+                "status": "completed",
+                "report": {
+                    "decision": "validated_improvement",
+                    "model_usage": {
+                        "provider": "ollama",
+                        "model": "qwen2.5-coder:3b",
+                        "calls": 1,
+                        "tokens": 30,
+                        "latency_seconds": 2,
+                        "estimated_cost_usd": 0,
+                    },
+                    "candidates": [
+                        {
+                            "source": "ollama",
+                            "accepted": True,
+                            "benchmark": {"median_speedup": 2, "runs": []},
+                        }
+                    ],
+                },
+            },
+        },
+        {
+            "provider": "ollama",
+            "session": {
+                "status": "completed",
+                "report": {
+                    "decision": "validated_improvement",
+                    "model_usage": {
+                        "provider": "ollama",
+                        "calls": 1,
+                        "error": "ValidationError",
+                        "tokens": 10,
+                    },
+                    "candidates": [
+                        {
+                            "source": "deterministic",
+                            "accepted": True,
+                            "benchmark": {"median_speedup": 20, "runs": []},
+                        }
+                    ],
+                },
+            },
+        },
+    ]
+    result = aggregate(rows)["ollama"]
+    assert result["evaluated_workloads"] == 1
+    assert result["fallback_only_workloads"] == 1
+    assert result["accepted_model_candidates"] == 1
+    assert result["median_accepted_speedup"] == 2
+    assert result["model_errors"] == 1
+    assert result["models"] == ["qwen2.5-coder:3b"]
+    assert result["tokens"] == 40

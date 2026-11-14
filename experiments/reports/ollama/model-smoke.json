@@ -1,0 +1,1 @@
+{"provider": "ollama", "calls": 1, "tokens": 625, "estimated_cost_usd": 0, "cost_note": "Local inference: no API fee; hardware and electricity excluded", "model": "qwen2.5-coder:3b", "latency_seconds": 0.501121792000049, "candidates": 0}

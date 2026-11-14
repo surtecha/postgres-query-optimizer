@@ -10,6 +10,11 @@ x-backend: &backend
     PGO_STATE_DIR: /app/state
     PGO_OPENAI_API_KEY: ${PGO_OPENAI_API_KEY:-}
     PGO_MODEL: ${PGO_MODEL:-gpt-4.1-mini}
+    PGO_OPENAI_BASE_URL: ${PGO_OPENAI_BASE_URL:-https://api.openai.com/v1}
+    PGO_OLLAMA_BASE_URL: ${PGO_OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
+    PGO_OLLAMA_MODEL: ${PGO_OLLAMA_MODEL:-qwen2.5-coder:3b}
+    PGO_MODEL_TIMEOUT_SECONDS: ${PGO_MODEL_TIMEOUT_SECONDS:-90}
+    PGO_MAX_MODEL_TOKENS: ${PGO_MAX_MODEL_TOKENS:-32000}
     PGO_API_TOKEN: ${PGO_API_TOKEN:-}
     PGO_OTLP_ENDPOINT: ${PGO_OTLP_ENDPOINT:-}
   init: true
@@ -91,6 +96,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+  ollama:
+    image: ollama/ollama:latest
+    profiles: [local-llm]
+    ports: ["127.0.0.1:11434:11434"]
+    volumes: ["ollama-models:/root/.ollama"]
+    healthcheck:
+      test: [CMD, ollama, list]
+      interval: 5s
+      timeout: 5s
+      retries: 30
   prometheus:
     image: prom/prometheus:v3.2.1
     profiles: [observability]
@@ -106,3 +121,4 @@ volumes:
   app-data:
   benchmark-data:
   worker-state:
+  ollama-models:

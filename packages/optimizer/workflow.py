@@ -18,7 +18,7 @@ from optimizer.equivalence import verify
 from optimizer.models import Candidate
 from optimizer.persistence import Store
 from optimizer.plans import diagnose
-from optimizer.providers import DeterministicProvider, OpenAIProvider
+from optimizer.providers import DeterministicProvider, OllamaProvider, OpenAIProvider
 from optimizer.safety import UnsafeSQL, fingerprint, normalize, validate
 from optimizer.statistics import accept
 from optimizer.telemetry import CANDIDATES, FAILURES, SESSIONS, STAGES, TOKENS
@@ -112,9 +112,15 @@ class Workflow:
         }
         fallback = DeterministicProvider()
         candidates, usage = fallback.generate(query, context, self.settings.max_candidates)
-        if state["request"]["provider"] == "openai":
-            if self.settings.openai_api_key.get_secret_value():
-                proposed, model_usage = OpenAIProvider(self.settings).generate(
+        requested = state["request"]["provider"]
+        if requested in ("openai", "ollama"):
+            if requested == "ollama" or self.settings.openai_api_key.get_secret_value():
+                provider = (
+                    OllamaProvider(self.settings)
+                    if requested == "ollama"
+                    else OpenAIProvider(self.settings)
+                )
+                proposed, model_usage = provider.generate(
                     query, context, self.settings.max_candidates
                 )
                 candidates = proposed + candidates

@@ -6,7 +6,7 @@ from typing import Any
 
 def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
-    for provider in ("deterministic", "openai"):
+    for provider in ("deterministic", "openai", "ollama"):
         selected = [r for r in rows if r["provider"] == provider]
         executed = [r for r in selected if r.get("session")]
         completed = [r for r in executed if r["session"].get("status") == "completed"]
@@ -19,7 +19,7 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             else [
                 report
                 for report in all_reports
-                if report.get("model_usage", {}).get("provider") == "openai"
+                if report.get("model_usage", {}).get("provider") == provider
                 and report["model_usage"].get("calls", 0) > 0
                 and "error" not in report["model_usage"]
             ]
@@ -66,9 +66,16 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 sum(c["benchmark"]["median_speedup"] < 1 for c in measured), len(measured)
             ),
             "median_accepted_speedup": statistics.median(speedups) if speedups else None,
-            "model_candidates": sum(c.get("source") == "openai" for c in candidates),
-            "accepted_model_candidates": sum(c.get("source") == "openai" for c in accepted),
+            "model_candidates": sum(
+                provider != "deterministic" and c.get("source") == provider for c in candidates
+            ),
+            "accepted_model_candidates": sum(
+                provider != "deterministic" and c.get("source") == provider for c in accepted
+            ),
             "total_optimization_seconds": sum(r.get("duration_seconds", 0) for r in all_reports),
+            "models": sorted({u["model"] for u in usage if u.get("model")}),
+            "model_latency_seconds": sum(u.get("latency_seconds", 0) for u in usage),
+            "model_errors": sum("error" in u for u in usage),
             "model_calls": sum(u.get("calls", 0) for u in usage),
             "tokens": sum(u.get("tokens", 0) for u in usage)
             if usage and all(isinstance(u.get("tokens"), int) for u in usage)

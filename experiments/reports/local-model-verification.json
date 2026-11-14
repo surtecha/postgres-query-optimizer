@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-11-14T15:31:08.531427+00:00",
+  "scope": "Local Ollama integration and provider attribution",
+  "checks": {
+    "python_tests": {
+      "status": "passed",
+      "tests": 125,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "python_lint": "passed",
+    "python_types": "passed",
+    "web_lint": "passed",
+    "web_types": "passed",
+    "web_unit": {
+      "status": "passed",
+      "tests": 6
+    },
+    "web_production_build": "passed",
+    "compose_config": "passed",
+    "shell_syntax": "passed",
+    "capture_script_syntax": "passed"
+  },
+  "local_model_inference": "completed_on_host",
+  "local_model_benchmarks": "completed_on_host",
+  "new_screenshots": "desktop_and_mobile_captured_on_host",
+  "existing_benchmark_evidence": "experiments/reports/acceptance/evaluation.json",
+  "resume_performance_claims": "Pagination: 21.23x paired speedup from deterministic index; no accepted LLM-generated proposals",
+  "ollama_schema_fix": {
+    "constrained_generation": "json_schema",
+    "validation_diagnostics": "field errors without input values",
+    "live_validation": "12 successful host inference calls"
+  },
+  "host_evidence_verified_at": "2026-11-14T15:38:05.012596+00:00",
+  "execution_sandbox_blockers": [
+    "Docker socket access denied by execution sandbox",
+    "No responding Ollama server at localhost:11434 and no Ollama CLI in PATH",
+    "Outbound DNS lookup for ollama.com failed in execution sandbox"
+  ],
+  "host_evidence": {
+    "sessions": 24,
+    "model_calls": 12,
+    "model_generated_candidates": 27,
+    "finite_result_validated_model_candidates": 17,
+    "accepted_model_candidates": 0,
+    "browser_page_errors": 0
+  }
+}

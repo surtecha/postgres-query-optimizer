@@ -13,7 +13,9 @@ from optimizer.statistics import summary
 from optimizer.workloads import WORKLOADS
 
 
-def evaluate(settings: Settings, output: Path, identifiers: list[str]) -> None:
+def evaluate(
+    settings: Settings, output: Path, identifiers: list[str], providers: list[str] | None = None
+) -> None:
     db = Database(settings)
     store = Store(settings.app_dsn.get_secret_value())
     db.open()
@@ -29,7 +31,8 @@ def evaluate(settings: Settings, output: Path, identifiers: list[str]) -> None:
                         db.timed(conn, workload["sql"])[0] for _ in range(settings.repetitions)
                     ]
                 environment = db.inspect(workload["sql"])
-            for provider in ("deterministic", "openai"):
+            for provider in providers or ["deterministic", "openai"]:
+                print(f"Evaluating {workload['id']} / {provider}", flush=True)
                 if provider == "openai" and not settings.openai_api_key.get_secret_value():
                     results.append(
                         {
@@ -102,6 +105,12 @@ def main() -> None:
     evaluation = commands.add_parser("evaluate")
     evaluation.add_argument("--output", type=Path, default=Path("experiments/reports/latest"))
     evaluation.add_argument("--workloads", nargs="*", default=[])
+    evaluation.add_argument(
+        "--providers",
+        nargs="+",
+        choices=["deterministic", "openai", "ollama"],
+        default=["deterministic", "openai"],
+    )
     commands.add_parser("worker")
     args = parser.parse_args()
     settings = Settings()
@@ -123,7 +132,7 @@ def main() -> None:
             settings.admin_dsn.get_secret_value(), args.size, args.seed, Path("datasets/schema.sql")
         )
     elif args.command == "evaluate":
-        evaluate(settings, args.output, args.workloads)
+        evaluate(settings, args.output, args.workloads, args.providers)
     else:
         from optimizer.worker import run
 

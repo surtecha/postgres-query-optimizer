@@ -21,7 +21,7 @@ class Candidate(Contract):
     hypothesis: str = Field(min_length=1, max_length=2000)
     assumptions: list[str] = Field(default_factory=list, max_length=8)
     index: IndexProposal | None = None
-    source: Literal["deterministic", "openai"] = "deterministic"
+    source: Literal["deterministic", "openai", "ollama"] = "deterministic"
 
 
 class ModelResponse(Contract):
@@ -31,7 +31,7 @@ class ModelResponse(Contract):
 class OptimizeRequest(Contract):
     sql: str = Field(min_length=1, max_length=20000)
     workload_id: str | None = Field(None, max_length=100)
-    provider: Literal["deterministic", "openai"] = "deterministic"
+    provider: Literal["deterministic", "openai", "ollama"] = "deterministic"
 
 
 class Validation(Contract):
