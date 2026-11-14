@@ -21,7 +21,7 @@ def generate(dsn: str, size: str, seed: int, schema_file: Path) -> None:
                      "LANGUAGE SQL IMMUTABLE AS $$ SELECT "
                      "(('x'||substr(md5(n::text||':'||salt::text),1,8))::bit(32)::bigint)::float8/4294967296 $$")
         conn.execute("INSERT INTO commerce.suppliers SELECT n, 'Supplier '||n, "
-                     "(ARRAY['APAC','EMEA','AMER'])[1+n%%3] FROM generate_series(1,50) n")
+                     "(ARRAY['APAC','EMEA','AMER'])[1+mod(n,3)] FROM generate_series(1,50) n")
         conn.execute("INSERT INTO commerce.customers SELECT n, 'customer-'||n||'@example.invalid', "
                      "CASE WHEN n%%17=0 THEN NULL ELSE (ARRAY['APAC','EMEA','AMER'])[1+n%%3] END, "
                      "DATE '2023-01-01' + (n%%700)::int FROM generate_series(1,%s) n", (customers,))
@@ -39,10 +39,10 @@ def generate(dsn: str, size: str, seed: int, schema_file: Path) -> None:
         conn.execute("UPDATE commerce.orders o SET total=x.total FROM (SELECT order_id, SUM(quantity*unit_price) AS total "
                      "FROM commerce.order_items GROUP BY order_id) x WHERE o.id=x.order_id")
         conn.execute("INSERT INTO commerce.payments SELECT id, id, total, "
-                     "CASE WHEN id%%3=0 THEN 'bank' ELSE 'card' END, "
+                     "CASE WHEN mod(id,3)=0 THEN 'bank' ELSE 'card' END, "
                      "ordered_at+INTERVAL '1 minute' FROM commerce.orders WHERE status='paid'")
         conn.execute("INSERT INTO commerce.shipments SELECT id, id, ordered_at+INTERVAL '1 day', "
-                     "CASE WHEN id%%13=0 THEN NULL ELSE ordered_at+(2+id%%7)*INTERVAL '1 day' END, "
+                     "CASE WHEN mod(id,13)=0 THEN NULL ELSE ordered_at+(2+mod(id,7))*INTERVAL '1 day' END, "
                      "ordered_at+INTERVAL '5 days' FROM commerce.orders WHERE status='paid'")
         conn.execute("INSERT INTO commerce.inventory_movements SELECT n, 1+(n%% %s), "
                      "CASE WHEN n%%3=0 THEN -2 ELSE 10 END, TIMESTAMP '2025-01-01' "
@@ -61,3 +61,10 @@ def generate(dsn: str, size: str, seed: int, schema_file: Path) -> None:
         conn.execute("UPDATE edge_cases.orders SET customer_id=CASE WHEN id<20 THEN 1 ELSE NULL END, total=0")
         conn.execute("UPDATE edge_cases.customers SET region=NULL WHERE id%2=0")
         conn.execute("GRANT SELECT ON ALL TABLES IN SCHEMA commerce, edge_cases TO pgo_reader")
+
+        conn.execute("DROP SCHEMA IF EXISTS edge_empty CASCADE; CREATE SCHEMA edge_empty AUTHORIZATION pgo_experiment")
+        conn.execute("GRANT USAGE ON SCHEMA edge_empty TO pgo_reader")
+        for table in ("suppliers", "customers", "products", "orders", "order_items", "payments", "shipments", "inventory_movements"):
+            conn.execute(psycopg.sql.SQL("CREATE TABLE edge_empty.{} (LIKE commerce.{} INCLUDING ALL)").format(
+                psycopg.sql.Identifier(table), psycopg.sql.Identifier(table)))
+        conn.execute("GRANT SELECT ON ALL TABLES IN SCHEMA edge_empty TO pgo_reader")

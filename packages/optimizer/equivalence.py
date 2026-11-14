@@ -1,25 +1,12 @@
 """Bounded exact result comparison, preserving duplicate and type information."""
-from collections import Counter
 from typing import Any
 
 from sqlglot import exp
 
+from optimizer.results import equal_rows
 from optimizer.database import Database
 from optimizer.models import Validation
 from optimizer.safety import order_compatible, structure, validate
-
-
-def canonical(value: Any) -> Any:
-    if isinstance(value, (tuple, list)):
-        return tuple(canonical(item) for item in value)
-    if isinstance(value, dict):
-        return tuple(sorted((canonical(k), canonical(v)) for k, v in value.items()))
-    return (type(value).__qualname__, repr(value))
-
-
-def equal_rows(left: list[Any], right: list[Any], ordered: bool) -> bool:
-    a, b = [canonical(r) for r in left], [canonical(r) for r in right]
-    return a == b if ordered else Counter(a) == Counter(b)
 
 
 def fetch(conn: Any, query: str, db: Database) -> tuple[list[Any], list[Any]]:
@@ -56,7 +43,7 @@ def verify(db: Database, original: str, candidate: str) -> Validation:
     try:
         with db.reader() as conn:
             # Both executions and both datasets share one repeatable-read snapshot.
-            for schema in ("commerce", "edge_cases"):
+            for schema in ("commerce", "edge_cases", "edge_empty"):
                 left, lt = fetch(conn, rebind(original, schema), db)
                 right, rt = fetch(conn, rebind(candidate, schema), db)
                 if lt != rt or not equal_rows(left, right, ordered):

@@ -7,6 +7,7 @@ from typing import Any
 import psycopg
 from psycopg import sql
 from psycopg_pool import ConnectionPool
+from sqlglot import exp
 
 from optimizer.config import Settings
 from optimizer.dataset import LOCK_ID
@@ -52,7 +53,7 @@ class Database:
 
     def inspect(self, query: str) -> dict[str, Any]:
         tree = validate(query)
-        tables = sorted({t.name for t in tree.find_all(__import__('sqlglot').exp.Table) if t.name in TABLES})
+        tables = sorted({t.name for t in tree.find_all(exp.Table) if t.name in TABLES})
         with self.reader() as conn:
             # Parameters constrain catalog access to the requested allowlisted relations.
             columns = conn.execute("SELECT table_name,column_name,data_type FROM information_schema.columns "
