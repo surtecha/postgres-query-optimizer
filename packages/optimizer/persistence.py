@@ -141,7 +141,7 @@ class Store:
 
     def event(self, identifier: str, event: dict[str, Any]) -> None:
         with self.engine.begin() as conn:
-            row = conn.execute(
+            row: list[dict[str, Any]] = conn.execute(
                 select(sessions.c.events).where(sessions.c.id == identifier).with_for_update()
             ).scalar_one()
             conn.execute(

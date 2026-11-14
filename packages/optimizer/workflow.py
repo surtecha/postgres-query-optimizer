@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from collections.abc import Callable
-from typing import Any, TypedDict
+from typing import Any, Protocol, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from opentelemetry import trace
@@ -43,6 +43,10 @@ class State(TypedDict, total=False):
     report: dict[str, Any]
 
 
+class StageAction(Protocol):
+    def __call__(self, state: State) -> State: ...
+
+
 class Workflow:
     def __init__(self, db: Database, store: Store, settings: Settings, admin: Any) -> None:
         self.db, self.store, self.settings, self.admin = db, store, settings, admin
@@ -55,7 +59,7 @@ class Workflow:
         if time.time() - state["started_at"] > self.settings.session_seconds:
             raise BudgetExceeded("Session wall-clock budget exceeded")
 
-    def stage(self, name: str, action: Callable[[State], State]) -> Callable[[State], State]:
+    def stage(self, name: str, action: Callable[[State], State]) -> StageAction:
         @functools.wraps(action)
         def run(state: State) -> State:
             self.guard(state)

@@ -15,7 +15,8 @@ def generate(dsn: str, size: str, seed: int, schema_file: Path) -> None:
         identity = conn.execute("SELECT current_database(), current_user").fetchone()
         if identity != ("pgo_benchmark", "pgo_experiment"):
             raise ValueError("Generation requires pgo_experiment on pgo_benchmark")
-        if not conn.execute("SELECT pg_try_advisory_xact_lock(%s)", (LOCK_ID,)).fetchone()[0]:
+        lock = conn.execute("SELECT pg_try_advisory_xact_lock(%s)", (LOCK_ID,)).fetchone()
+        if lock is None or not lock[0]:
             raise RuntimeError("An experiment is active, dataset regeneration refused")
         conn.execute(schema_file.read_text())
         conn.execute(

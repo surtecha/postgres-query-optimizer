@@ -124,7 +124,8 @@ class Database:
             identity = admin.execute("SELECT current_database(),current_user").fetchone()
             if identity != ("pgo_benchmark", "pgo_experiment"):
                 raise UnsafeSQL("Index experiments require pgo_experiment on pgo_benchmark")
-            if not admin.execute("SELECT pg_try_advisory_lock(%s)", (LOCK_ID,)).fetchone()[0]:
+            lock = admin.execute("SELECT pg_try_advisory_lock(%s)", (LOCK_ID,)).fetchone()
+            if lock is None or not lock[0]:
                 raise BudgetExceeded(
                     "Another benchmark or dataset generation holds the experiment lock"
                 )

@@ -110,8 +110,14 @@ def main() -> None:
             import psycopg
 
             with psycopg.connect(settings.admin_dsn.get_secret_value()) as conn:
-                if conn.execute("SELECT to_regclass('commerce.dataset_manifest')").fetchone()[0]:
-                    if conn.execute("SELECT count(*) FROM commerce.dataset_manifest").fetchone()[0]:
+                relation = conn.execute(
+                    "SELECT to_regclass('commerce.dataset_manifest')"
+                ).fetchone()
+                if relation is not None and relation[0]:
+                    manifest = conn.execute(
+                        "SELECT count(*) FROM commerce.dataset_manifest"
+                    ).fetchone()
+                    if manifest is not None and manifest[0]:
                         return
         generate(
             settings.admin_dsn.get_secret_value(), args.size, args.seed, Path("datasets/schema.sql")

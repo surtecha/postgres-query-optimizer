@@ -36,7 +36,8 @@ def run() -> None:
         settings.app_dsn.get_secret_value().replace("postgresql+psycopg:", "postgresql:"),
         autocommit=True,
     ) as leader:
-        if not leader.execute("SELECT pg_try_advisory_lock(718029413)").fetchone()[0]:
+        lock = leader.execute("SELECT pg_try_advisory_lock(718029413)").fetchone()
+        if lock is None or not lock[0]:
             raise RuntimeError("Another worker is active")
         store.recover()
         try:

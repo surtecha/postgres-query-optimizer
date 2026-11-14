@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
-from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
@@ -111,13 +110,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         limit: int = Query(25, ge=1, le=100),
         status: str | None = Query(None, max_length=24),
     ) -> list[dict[str, Any]]:
-        return jsonable_encoder(store.list(offset, limit, status))
+        return store.list(offset, limit, status)
 
     def load(identifier: str) -> dict[str, Any]:
         row = store.get(identifier)
         if row is None:
             raise HTTPException(404, "Optimization not found")
-        return jsonable_encoder(row)
+        return row
 
     @app.get("/api/v1/optimizations/{identifier}", dependencies=[Depends(auth)])
     @app.get("/api/v1/experiments/{identifier}", dependencies=[Depends(auth)])
