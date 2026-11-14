@@ -1,0 +1,22 @@
+{
+  "source": "Refreshed host-generated PNG files, inspected in the workspace",
+  "screenshots": [
+    {
+      "path": "docs/assets/workspace-desktop.png",
+      "width": 1280,
+      "height": 4863,
+      "sha256": "1bfff6313d892c3b80a2a65e1a430c4441adaaa782386c5862c7d7a58916721c"
+    },
+    {
+      "path": "docs/assets/workspace-mobile.png",
+      "width": 390,
+      "height": 6048,
+      "sha256": "1a0c6b2e4050201b2298501a5ac4884ee86920db35b3d585b100c826b81fa8a2"
+    }
+  ],
+  "mobile_document_width": 390,
+  "chart_bars": "visible in both captures",
+  "navigation": "captured from document top",
+  "test_runner_summary": "not supplied for this refreshed run",
+  "limitation": "List counters can lag session detail because polling requests are independent"
+}
