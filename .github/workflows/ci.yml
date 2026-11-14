@@ -10,7 +10,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: environment.yml
-          activate-environment: pg-optimizer-ai
+          activate-environment: postgres-query-optimizer
           auto-activate-base: false
       - name: Python quality checks
         shell: bash -el {0}

@@ -1,4 +1,4 @@
-name: pg-optimizer-ai
+name: postgres-query-optimizer
 channels:
   - conda-forge
 dependencies:

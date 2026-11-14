@@ -8,8 +8,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-if "pg-optimizer-ai" not in sys.executable:
-    raise SystemExit("Run inside the dedicated pg-optimizer-ai Conda environment")
+if Path(sys.prefix).name != "postgres-query-optimizer":
+    raise SystemExit("Run inside the dedicated postgres-query-optimizer Conda environment")
 sys.path.insert(0, str(ROOT / "packages"))
 suite = unittest.defaultTestLoader.discover(str(ROOT / "tests/unit"))
 result = unittest.TextTestRunner(verbosity=2).run(suite)

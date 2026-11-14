@@ -7,6 +7,12 @@ One cached Tk dependency declared an older zlib constraint. The interpreter and
 SQLGlot checks ran, but the environment is not a resolved release environment.
 The committed environment specification requires a fresh normal Conda resolution.
 
+Subsequent development targets the supplied `postgres-query-optimizer` Conda
+environment with Python 3.12.16. Its interpreter was verified. Dependency
+installation remains blocked by read-only site-packages and unavailable registry
+DNS. The unit results below belong to the earlier environment and have not been
+repeated in the replacement environment.
+
 | Check | Actual result |
 |---|---|
 | Unit tests | 47 executed, 47 passed, 0 failed, 0 skipped |

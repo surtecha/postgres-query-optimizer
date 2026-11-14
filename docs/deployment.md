@@ -6,7 +6,7 @@ Compose service hostnames. Compose injects service DSNs directly.
 
 ```sh
 conda env create -f environment.yml
-conda activate pg-optimizer-ai
+conda activate postgres-query-optimizer
 python --version
 python -m pip --version
 cp .env.example .env
