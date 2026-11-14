@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import Link from "next/link";
 import {QueryClient,QueryClientProvider,useMutation,useQuery,useQueryClient} from "@tanstack/react-query";
 import {Button} from "@/components/ui/button";
 import {PlanTree} from "@/components/plan";
@@ -40,7 +41,7 @@ function Workspace() {
  const report=current?.report;
  const error=submit.error||sessions.error||workloads.error||session.error||totals.error||cancel.error;
  const exportReport=()=>{if(!current)return;const url=URL.createObjectURL(new Blob([JSON.stringify(current,null,2)],{type:"application/json"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`optimization-${current.id}.json`;anchor.click();URL.revokeObjectURL(url);};
- return <div className="application"><aside><a className="brand" href="/">Postgres<br/><strong>Query Engineer</strong></a><nav aria-label="Main navigation"><a href="#workspace">SQL workspace</a><a href="#activity">Optimization sessions</a><a href="#evidence">Experiment evidence</a></nav><div className="boundary"><strong>Controlled experiments</strong><p>Local benchmark database. Recommendations require measured evidence.</p></div></aside>
+ return <div className="application"><aside><Link className="brand" href="/">Postgres<br/><strong>Query Engineer</strong></Link><nav aria-label="Main navigation"><a href="#workspace">SQL workspace</a><a href="#activity">Optimization sessions</a><a href="#evidence">Experiment evidence</a></nav><div className="boundary"><strong>Controlled experiments</strong><p>Local benchmark database. Recommendations require measured evidence.</p></div></aside>
  <main><header><div><h1>Query performance</h1><p className="muted">Inspect plans. Validate semantics. Measure candidates.</p></div><label className="access">API access token<input type="password" value={token} onChange={e=>setToken(e.target.value)} autoComplete="off" placeholder="Optional for local deployment"/></label></header>
  {error&&<div role="alert" className="error">{error.message}</div>}
  <dl className="overview"><div><dt>Total sessions</dt><dd>{totals.data?.total??"Unavailable"}</dd></div><div><dt>Completed</dt><dd>{totals.data?.completed??"Unavailable"}</dd></div><div><dt>Validated improvements</dt><dd>{totals.data?.improved??"Unavailable"}</dd></div><div><dt>No accepted improvement</dt><dd>{totals.data?.unchanged??"Unavailable"}</dd></div><div><dt>Workloads evaluated</dt><dd>{totals.data?`${totals.data.coverage} / ${workloads.data?.length??12}`:"Unavailable"}</dd></div></dl>

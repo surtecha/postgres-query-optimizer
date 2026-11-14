@@ -20,3 +20,4 @@ state/
 test-results/
 playwright-report/
 .cache/
+*.tsbuildinfo
