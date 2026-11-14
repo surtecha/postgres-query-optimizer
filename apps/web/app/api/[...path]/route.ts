@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
+import { isSameOrigin } from "@/lib/origin";
 const allowed = /^(summary|optimizations(?:\/[a-f0-9-]+(?:\/(?:cancel|report|events|candidates|plans|benchmarks))?)?|workloads(?:\/[a-z_]+)?|health|readiness|experiments(?:\/[a-f0-9-]+)?)$/;
 async function forward(request: NextRequest, context: {params: Promise<{path: string[]}>}) {
   const {path} = await context.params;
   const route = path.join("/");
   if (!allowed.test(route)) return Response.json({error:"Unknown API route"}, {status:404});
-  // Reject cross-origin writes before adding server-side credentials.
+  // Use the browser-facing Host. The internal Next URL can use the Docker bind address.
   const origin = request.headers.get("origin");
-  if (request.method === "POST" && origin && origin !== request.nextUrl.origin) return Response.json({error:"Origin rejected"}, {status:403});
+  if (request.method === "POST" && !isSameOrigin(origin, request.headers.get("host"), request.nextUrl.protocol)) return Response.json({error:"Origin rejected"}, {status:403});
   const body = request.method === "POST" ? await request.text() : undefined;
   if (body && Buffer.byteLength(body) > 24000) return Response.json({error:"Request too large"}, {status:413});
   try {
