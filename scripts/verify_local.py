@@ -1,5 +1,6 @@
 """Capture local checks without promoting unexecuted integration checks to success."""
 import datetime as dt
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -11,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if Path(sys.prefix).name != "postgres-query-optimizer":
     raise SystemExit("Run inside the dedicated postgres-query-optimizer Conda environment")
 sys.path.insert(0, str(ROOT / "packages"))
-suite = unittest.defaultTestLoader.discover(str(ROOT / "tests/unit"))
+loader = unittest.TestLoader()
+suite = loader.discover(str(ROOT / "tests/unit"))
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 compiled = subprocess.run([sys.executable, "-m", "compileall", "-q", "packages", "tests",
                            "infrastructure/migrations"], cwd=ROOT, check=False)
@@ -19,16 +21,20 @@ report = {
     "timestamp": dt.datetime.now(dt.UTC).isoformat(),
     "python": sys.version.split()[0],
     "interpreter": sys.executable,
-    "unit_tests": {"executed": result.testsRun, "failures": len(result.failures),
-                   "errors": len(result.errors), "skipped": len(result.skipped)},
+    "unit_tests": {"status": "passed" if result.wasSuccessful() else "failed",
+                   "executed": result.testsRun - len(loader.errors),
+                   "passed": result.testsRun - len(result.failures) - len(result.errors) - len(result.skipped),
+                   "failures": len(result.failures),
+                   "errors": len(result.errors), "skipped": len(result.skipped),
+                   "discovery_errors": len(loader.errors)},
     "python_syntax": "passed" if compiled.returncode == 0 else "failed",
     "tools": {name: shutil.which(name) is not None for name in ("docker", "gh", "psql", "node", "npm")},
     "integration": "not_run", "frontend_build": "not_run", "browser_tests": "not_run",
     "lint": "not_run", "typecheck": "not_run", "benchmarks": "not_run",
-    "dependency_locks": "not_generated", "github_publication": "blocked",
-    "blockers": ["Package registry and GitHub DNS resolution unavailable",
-                 "Docker engine/CLI, PostgreSQL server tools and GitHub CLI absent",
-                 "Full Python and frontend dependency sets could not be installed"],
+    "missing_check_modules": [name for name in ("sqlglot", "pytest", "ruff", "mypy")
+                              if importlib.util.find_spec(name) is None],
+    "network": "not_checked_by_this_script",
+    "github_publication": "not_checked_by_this_script",
 }
 output = ROOT / "experiments/reports/local-verification.json"
 output.parent.mkdir(parents=True, exist_ok=True)
