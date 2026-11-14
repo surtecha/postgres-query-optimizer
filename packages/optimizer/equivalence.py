@@ -3,6 +3,7 @@
 from typing import Any
 
 from sqlglot import exp
+from sqlglot.optimizer.scope import traverse_scope
 
 from optimizer.database import Database
 from optimizer.models import Validation
@@ -27,10 +28,12 @@ def fetch(conn: Any, query: str, db: Database) -> tuple[list[Any], list[Any]]:
 
 def rebind(query: str, schema: str) -> str:
     tree = validate(query)
-    ctes = {cte.alias_or_name for cte in tree.find_all(exp.CTE)}
-    for table in tree.find_all(exp.Table):
-        if table.name not in ctes or table.db:
-            table.set("db", exp.to_identifier(schema))
+    # CTE names are local to their scope. A nested CTE must not hide an unrelated
+    # outer base relation from differential dataset rebinding.
+    for scope in traverse_scope(tree):
+        for table in scope.tables:
+            if isinstance(scope.sources.get(table.alias_or_name), exp.Table):
+                table.set("db", exp.to_identifier(schema))
     return tree.sql(dialect="postgres")
 
 
