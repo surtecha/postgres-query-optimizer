@@ -1,0 +1,31 @@
+name: measured-evaluation
+on:
+  workflow_dispatch:
+    inputs:
+      size:
+        description: Dataset size
+        type: choice
+        options: [small, medium, large]
+        default: small
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build -d api
+      - name: Generate selected deterministic dataset
+        run: docker compose run --rm seed pg-optimizer seed --size ${{ inputs.size }} --seed 42
+      - run: docker compose up -d worker
+      - name: Run deterministic evaluation without paid credentials
+        run: |
+          docker compose exec -T api pg-optimizer evaluate --output /app/experiments/reports/ci
+          docker compose cp api:/app/experiments/reports/ci experiments/reports/ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: measured-evaluation
+          path: experiments/reports/ci
+      - if: always()
+        run: docker compose down --volumes

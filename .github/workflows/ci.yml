@@ -1,0 +1,82 @@
+name: quality
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          activate-environment: pg-optimizer-ai
+          auto-activate-base: false
+      - name: Python quality checks
+        shell: bash -el {0}
+        run: |
+          python --version
+          python -m ruff check packages tests
+          python -m ruff format --check packages tests
+          python -m mypy packages/optimizer
+          python -m pytest tests/unit tests/integration/test_agent.py -v
+      - name: Dependency audit
+        shell: bash -el {0}
+        run: python -m pip_audit
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and start isolated stack
+        run: docker compose up --build -d
+      - name: Wait for readiness
+        run: |
+          for n in $(seq 1 90); do
+            if curl --fail http://localhost:8000/api/v1/readiness; then exit 0; fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+      - name: PostgreSQL integration tests in isolated container
+        run: |
+          docker compose exec -T api python -m pip install --no-cache-dir pytest httpx
+          docker compose cp tests api:/app/tests
+          docker compose exec -T -e PGO_INTEGRATION=1 api python -m pytest /app/tests/integration -v
+      - name: Browser integration
+        working-directory: apps/web
+        run: |
+          npm install --no-fund
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+      - name: Preserve service diagnostics and real screenshots
+        if: always()
+        run: docker compose logs > compose-test.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-evidence
+          path: |
+            compose-test.log
+            docs/assets/*.png
+            apps/web/test-results
+      - name: Stop project containers
+        if: always()
+        run: docker compose down --volumes

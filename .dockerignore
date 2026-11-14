@@ -1,0 +1,10 @@
+.git
+.git-store
+.conda
+.tools
+.artifacts
+.env
+**/node_modules
+**/.next
+**/__pycache__
+state
