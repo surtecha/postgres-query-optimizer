@@ -114,47 +114,64 @@ class OpenAIProvider:
                 "estimated_cost_usd": None,
             }
         started = time.monotonic()
-        for attempt in range(1):
-            try:
-                response = self.client.chat.completions.create(
-                    model=self.settings.model,
-                    messages=[
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": payload},
-                    ],
-                    response_format={"type": "json_object"},
-                    max_tokens=1024,
-                    temperature=0,
-                )
-                text = response.choices[0].message.content
-                parsed = ModelResponse.model_validate_json(text or "")
-                candidates = [
-                    candidate.model_copy(update={"source": "openai"})
-                    for candidate in parsed.candidates[:limit]
-                ]
-                return candidates, {
-                    "provider": "openai",
-                    "calls": attempt + 1,
-                    "tokens": response.usage.total_tokens if response.usage else None,
+        usage: dict[str, Any] = {
+            "provider": "openai",
+            "calls": 1,
+            "tokens": None,
+            "estimated_cost_usd": None,
+            "cost_note": "No price configured, cost is unknown",
+        }
+        try:
+            response = self.client.chat.completions.create(
+                model=self.settings.model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": payload},
+                ],
+                response_format={"type": "json_object"},
+                max_tokens=1024,
+                temperature=0,
+            )
+            # A billed response can fail validation. Preserve its known usage.
+            usage["tokens"] = response.usage.total_tokens if response.usage else None
+            if not response.choices:
+                return [], {
+                    **usage,
                     "latency_seconds": time.monotonic() - started,
-                    "estimated_cost_usd": None,
-                    "cost_note": "No price configured, cost is unknown",
+                    "error": "EmptyResponse",
                 }
-            except (ValidationError, ValueError) as exc:
+            choice = response.choices[0]
+            if choice.finish_reason != "stop":
                 return [], {
-                    "provider": "openai",
-                    "calls": attempt + 1,
-                    "tokens": None,
-                    "error": type(exc).__name__,
-                    "estimated_cost_usd": None,
+                    **usage,
+                    "latency_seconds": time.monotonic() - started,
+                    "error": "IncompleteResponse",
                 }
-            except (RateLimitError, APIConnectionError, APITimeoutError, APIStatusError) as exc:
-                # Do not repeat unknown billed model work within one session budget.
+            text = choice.message.content
+            if not text or not text.strip():
                 return [], {
-                    "provider": "openai",
-                    "calls": attempt + 1,
-                    "tokens": None,
-                    "error": type(exc).__name__,
-                    "estimated_cost_usd": None,
+                    **usage,
+                    "latency_seconds": time.monotonic() - started,
+                    "error": "EmptyResponse",
                 }
-        raise RuntimeError("Unreachable provider retry state")
+            parsed = ModelResponse.model_validate_json(text)
+            candidates = [
+                candidate.model_copy(update={"source": "openai"})
+                for candidate in parsed.candidates[:limit]
+            ]
+            return candidates, usage
+        except (ValidationError, ValueError) as exc:
+            return [], {
+                **usage,
+                "latency_seconds": time.monotonic() - started,
+                "error": type(exc).__name__,
+            }
+        except (RateLimitError, APIConnectionError, APITimeoutError, APIStatusError) as exc:
+            # Do not repeat unknown billed work or substitute zero usage on failure.
+            return [], {
+                **usage,
+                "latency_seconds": time.monotonic() - started,
+                "error": type(exc).__name__,
+            }
+        finally:
+            usage["latency_seconds"] = time.monotonic() - started
