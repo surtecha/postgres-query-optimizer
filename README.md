@@ -5,11 +5,11 @@ candidate acceptance. PostgreSQL selects execution plans. This project explores
 SQL formulations and physical indexes beyond a fixed query and schema.
 
 **Execution status:** incomplete end-to-end acceptance. In the selected Python
-3.12.16 environment, 68 tests pass and 8 PostgreSQL tests are skipped. Ruff,
+3.12.16 environment, 83 tests pass and 8 PostgreSQL tests are skipped. Ruff,
 formatting, strict Mypy, ESLint and strict TypeScript checks pass. The frontend
-production build passes with webpack on Node 22; default Turbopack is blocked by
-the execution sandbox. Docker is running on the host, but this session cannot
-access its socket. PostgreSQL execution, real browser workflows, benchmarks,
+production build uses webpack and passes with the current Node 26 runtime.
+The configured Node 22 build passed during the preceding verification. This
+session cannot access the Docker socket. PostgreSQL execution, real browser workflows, benchmarks,
 GitHub publication and CI remain unverified. No measured speedups or application
 screenshots are claimed.
 

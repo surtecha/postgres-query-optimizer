@@ -4,6 +4,10 @@ The CLI evaluator measures each original workload, then enqueues deterministic
 and model-assisted sessions. It writes incremental JSON evidence and a Markdown
 table. Without a model credential, the model arm is explicitly `not_run`.
 A fallback deterministic run is not counted as evidence of model value.
+Completed fallback-only sessions are counted separately. Their known model token
+usage remains included, but their improvements do not enter model-arm outcome
+rates. Model-generated and accepted-model candidate counts expose contribution
+separately from deterministic proposals.
 
 Reports retain baseline distributions, candidate results, equivalence failures,
 acceptance decisions, environment settings, dataset manifest, model calls and token

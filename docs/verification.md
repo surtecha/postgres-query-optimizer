@@ -169,3 +169,36 @@ or alternative environment was introduced. After access is available, remaining
 acceptance includes clean installs, default/container builds, PostgreSQL/security
 and process-recovery tests, browser workflows and screenshots, all 12 measured
 workloads, public publication, Actions, and final remote-commit verification.
+
+## Current continuation verification: 14 November 2026
+
+The selected environment supplies Python 3.12.16 and the installed dependencies.
+Dependency consistency, Ruff lint and formatting, strict Mypy, ESLint and strict
+TypeScript checks pass. The full Pytest suite now reports 83 passed, 8 explicitly
+skipped PostgreSQL integration tests and one dependency deprecation warning.
+Compose configuration validation passes.
+
+Four scope-rebinding regressions verify that nested CTE names cannot prevent outer
+base relations from being switched to differential datasets. Eight provider tests
+cover empty choices, empty content, invalid schemas, truncated output, timeouts and
+successful structured responses. Six provider cases failed before the correction.
+Known token usage now survives schema errors. Three evaluation cases verify that
+fallback-only results are excluded from model-arm outcome rates while known usage
+remains accounted for.
+
+The standard `npm run build` command now selects webpack and passes with Node
+26.13.0. The earlier webpack build on Node 22 remains recorded above. Turbopack
+still fails because the execution session denies its internal port binding.
+Webpack requires no such internal server for this build.
+
+Docker CLI 29.9.3 and Compose v5.7.0 are installed. The configured Docker Desktop
+socket is unavailable from this session with a no-such-file error. Launching
+Docker through the host application launcher also reports that the application
+is unavailable in this session. No socket proxy or alternate endpoint was used.
+PyPI and GitHub API DNS probes still fail. GitHub authentication therefore cannot
+be validated, and no remote is configured. Host authentication is not assumed
+invalid solely because the session cannot resolve the API hostname.
+
+PostgreSQL execution, container builds, real browser tests, screenshots, measured
+workloads, publication and Actions remain blocked and are not claimed complete.
+`experiments/reports/continuation-verification.json` records the current results.

@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-11-14T10:51:21.263608+00:00",
+  "environment": "postgres-query-optimizer",
+  "python": "3.12.16",
+  "interpreter": "/Users/surtecha/Tools/miniconda/envs/postgres-query-optimizer/bin/python",
+  "node": "v26.13.0",
+  "pytest": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 8,
+    "warnings": 1,
+    "skip_reason": "Explicit controlled PostgreSQL stack unavailable"
+  },
+  "checks": {
+    "ruff_lint": "passed",
+    "ruff_format": "passed",
+    "mypy_strict": "passed",
+    "eslint": "passed",
+    "typescript_strict": "passed",
+    "pip_check": "passed",
+    "compose_config": "passed"
+  },
+  "frontend_build": {
+    "command": "npm run build",
+    "bundler": "webpack",
+    "status": "passed"
+  },
+  "turbopack_probe": "failed: internal port binding denied by sandbox",
+  "regressions": {
+    "cte_rebinding": 4,
+    "provider_responses": 8,
+    "evaluation_fallback_attribution": 3
+  },
+  "docker": {
+    "cli": "29.9.3",
+    "compose": "v5.7.0",
+    "socket": "unavailable in execution session"
+  },
+  "network": {
+    "pypi": "DNS resolution failed",
+    "github_api": "DNS resolution failed"
+  },
+  "postgresql_execution": "not_run",
+  "browser_tests": "not_run",
+  "benchmarks": "not_run",
+  "screenshots": "not_generated",
+  "github_publication": "blocked",
+  "github_actions": "not_run",
+  "performance_claim": null
+}

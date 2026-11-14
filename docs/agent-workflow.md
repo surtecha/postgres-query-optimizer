@@ -31,6 +31,9 @@ billing or schema failures are not retried automatically. Deterministic proposal
 remain available on failure. Token usage is recorded when supplied by the provider.
 Unknown usage and cost remain null, never zero.
 
+Empty choices, empty content and truncated completions return explicit provider
+errors. Response token usage remains recorded when schema validation fails.
+
 The deterministic provider applies SQLGlot predicate simplification and proposes
 B-tree indexes on literal filter columns. Compatible order columns can extend the
 index. Existing single-column index definitions suppress obvious duplicates.
