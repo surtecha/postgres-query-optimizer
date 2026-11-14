@@ -223,3 +223,23 @@ This is supplied host evidence. The execution session still receives permission
 denied for the Docker socket and cannot connect to the host API or frontend.
 Real browser tests, screenshots and repeated workload evaluations remain pending.
 No measured speedup follows from these integration results.
+
+## Browser failure investigation
+
+The supplied host Playwright run reported two failures. The first stopped at the
+workload selector before submitting an optimization. The second reached the
+application but received `Origin rejected`, and its broad alert locator also
+matched Next.js's route announcer.
+
+A local NextRequest reproduction confirmed the Docker mismatch between the
+browser origin `http://localhost:3000` and internal origin `http://0.0.0.0:3000`.
+The proxy now checks the browser-facing Host and scheme. Six Node unit tests
+verify valid requests and rejection of cross-origin or malformed inputs.
+The workload locator now targets its combobox role. The application request
+alert has an accessible name that distinguishes it from the route announcer.
+Control-action timeouts are bounded at ten seconds, while the explicit
+optimization-completion wait remains unchanged.
+
+Frontend lint, strict types, all six origin unit tests and the production build
+pass. The full browser flow still requires a rebuilt host frontend and a new
+Playwright run. No successful browser run or screenshot is claimed yet.

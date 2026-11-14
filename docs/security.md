@@ -31,6 +31,12 @@ Request body limits include chunked requests. User errors return 422. Infrastruc
 errors return safe categories. Logs contain stage metadata, not connection strings.
 Reports contain submitted SQL and database metadata and should be access controlled.
 
+Browser POST origins are compared with the incoming HTTP Host and request scheme.
+The internal Docker bind address is not a browser origin. Cross-origin hosts, ports,
+schemes, malformed origins and opaque origins remain rejected. Forwarded-host
+headers do not authorize an origin. A reverse proxy must preserve the intended
+Host and scheme. Requests without Origin still require configured bearer access.
+
 Dependency and security CI jobs are configured but have not run. Dependency locks
 are not available because package registries could not be reached. No security
 review or production-readiness certification is claimed.
